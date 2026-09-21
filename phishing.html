@@ -1,0 +1,2457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>PHISHNET — Inbox Interceptor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --ink: #0B0D10;
+      --ink2: #12161B;
+      --ink3: #191F26;
+      --line: #242C34;
+      --line2: #2F3942;
+      --paper: #EDEAE2;
+      --muted: #8B939C;
+      --dim: #5C656E;
+      --safe: #3FBF7F;
+      --danger: #FF4F30;
+      --amber: #FFB224;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --sans: 'Space Grotesk', sans-serif;
+      --panelw: 0px;
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--sans);
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    button {
+      font-family: var(--mono);
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      touch-action: manipulation
+    }
+
+    kbd {
+      font: 600 10px var(--mono);
+      border: 1px solid var(--line2);
+      padding: 2px 5px;
+      border-radius: 3px;
+      color: var(--muted)
+    }
+
+    svg.lucide {
+      width: 1em;
+      height: 1em;
+      stroke-width: 1.75;
+      vertical-align: -.12em
+    }
+
+    #stage,
+    #stage canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%
+    }
+
+    #stage canvas {
+      touch-action: none;
+      display: block
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--line2)
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    /* ---------- screens ---------- */
+    .screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      background: rgba(11, 13, 16, .9);
+      backdrop-filter: blur(7px);
+      -webkit-backdrop-filter: blur(7px);
+      overflow-y: auto
+    }
+
+    .eyebrow {
+      font: 600 10px var(--mono);
+      letter-spacing: .3em;
+      color: var(--muted);
+      text-transform: uppercase
+    }
+
+    .lede {
+      font: 400 14px/1.65 var(--sans);
+      color: var(--muted);
+      max-width: 46ch;
+      margin-top: 16px
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px
+    }
+
+    .logo .l-icon {
+      font-size: 38px;
+      color: var(--paper);
+      display: flex
+    }
+
+    .logo h1 {
+      font: 700 clamp(44px, 7vw, 76px)/1 var(--sans);
+      letter-spacing: -.02em
+    }
+
+    .rule {
+      height: 1px;
+      background: var(--line);
+      margin: 26px 0
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font: 700 12px var(--mono);
+      letter-spacing: .22em;
+      padding: 15px 22px;
+      border: 1px solid var(--line2);
+      color: var(--paper);
+      transition: background .15s, color .15s, border-color .15s
+    }
+
+    .btn:hover {
+      background: var(--paper);
+      color: var(--ink);
+      border-color: var(--paper)
+    }
+
+    .btn.primary {
+      border-color: var(--paper);
+      padding: 18px 26px;
+      font-size: 13px;
+      width: 100%;
+      justify-content: center
+    }
+
+    .btn.primary:hover {
+      background: var(--paper);
+      color: var(--ink)
+    }
+
+    .btn.ghost {
+      border-color: transparent;
+      color: var(--muted);
+      padding: 10px 12px;
+      letter-spacing: .18em
+    }
+
+    .btn.ghost:hover {
+      color: var(--paper);
+      background: var(--ink3)
+    }
+
+    /* ---------- auth ---------- */
+    .auth-wrap {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px
+    }
+
+    .auth-card {
+      width: min(400px, 100%)
+    }
+
+    .tabs {
+      display: flex;
+      border: 1px solid var(--line);
+      margin: 22px 0 4px
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 11px;
+      font: 700 11px var(--mono);
+      letter-spacing: .2em;
+      color: var(--dim)
+    }
+
+    .tabs button.on {
+      background: var(--ink3);
+      color: var(--paper)
+    }
+
+    .f-l {
+      font: 600 9px var(--mono);
+      letter-spacing: .26em;
+      color: var(--dim);
+      margin: 16px 0 6px
+    }
+
+    input {
+      width: 100%;
+      background: rgba(18, 22, 27, .6);
+      border: 1px solid var(--line2);
+      color: var(--paper);
+      font: 500 13px var(--mono);
+      padding: 12px 14px;
+      outline: none
+    }
+
+    input:focus {
+      border-color: var(--paper)
+    }
+
+    #authErr {
+      font: 500 11px/1.5 var(--mono);
+      color: var(--danger);
+      margin-top: 12px;
+      min-height: 18px
+    }
+
+    .auth-note {
+      font: 400 10px/1.7 var(--mono);
+      color: var(--dim);
+      margin-top: 20px
+    }
+
+    .auth-links {
+      display: flex;
+      margin-top: 14px
+    }
+
+    /* ---------- menu ---------- */
+    .menu-wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 640px;
+      padding: 9vh 7vw
+    }
+
+    .seg {
+      display: flex;
+      border: 1px solid var(--line)
+    }
+
+    .seg button {
+      flex: 1;
+      padding: 12px 12px;
+      border-right: 1px solid var(--line);
+      text-align: left
+    }
+
+    .seg button:last-child {
+      border-right: none
+    }
+
+    .seg .d-name {
+      display: block;
+      font: 700 12px var(--mono);
+      letter-spacing: .18em;
+      color: var(--muted)
+    }
+
+    .seg .d-desc {
+      display: block;
+      font: 400 9.5px var(--mono);
+      color: var(--dim);
+      margin-top: 5px
+    }
+
+    .seg .d-mult {
+      display: block;
+      font: 700 11px var(--mono);
+      color: var(--dim);
+      margin-top: 7px
+    }
+
+    .seg button.on {
+      background: var(--ink3)
+    }
+
+    .seg button.on .d-name {
+      color: var(--paper)
+    }
+
+    .seg button.on .d-mult {
+      color: var(--safe)
+    }
+
+    .statstrip {
+      display: flex;
+      flex-wrap: wrap;
+      border: 1px solid var(--line)
+    }
+
+    .statstrip>div {
+      flex: 1 1 auto;
+      padding: 12px 16px;
+      border-right: 1px solid var(--line);
+      min-width: 96px
+    }
+
+    .statstrip>div:last-child {
+      border-right: none
+    }
+
+    .st-l {
+      font: 600 9px var(--mono);
+      letter-spacing: .24em;
+      color: var(--dim)
+    }
+
+    .st-v {
+      font: 700 19px var(--mono);
+      margin-top: 5px;
+      font-variant-numeric: tabular-nums
+    }
+
+    .reg-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font: 500 12px var(--mono);
+      padding: 9px 2px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted)
+    }
+
+    .reg-row .me {
+      color: var(--paper)
+    }
+
+    .reg-row .sc {
+      font-variant-numeric: tabular-nums
+    }
+
+    .menu-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+      flex-wrap: wrap
+    }
+
+    /* ---------- HUD ---------- */
+    #hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 5;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 14px 20px;
+      pointer-events: none;
+      font-family: var(--mono)
+    }
+
+    #hud .h-left,
+    #hud .h-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      pointer-events: auto
+    }
+
+    #hud .brand {
+      font: 700 12px var(--mono);
+      letter-spacing: .26em
+    }
+
+    #hud .h-tag {
+      font: 500 10px var(--mono);
+      letter-spacing: .14em;
+      color: var(--dim)
+    }
+
+    #hudScore {
+      font: 700 26px var(--mono);
+      font-variant-numeric: tabular-nums
+    }
+
+    #hudStreak {
+      font: 700 10px var(--mono);
+      color: var(--safe);
+      letter-spacing: .18em;
+      min-width: 86px;
+      text-align: right
+    }
+
+    #hudLives {
+      display: flex;
+      gap: 6px;
+      font-size: 15px;
+      color: var(--safe)
+    }
+
+    #hudLives .lost {
+      color: var(--line2)
+    }
+
+    .h-btn {
+      border: 1px solid var(--line);
+      color: var(--muted);
+      padding: 8px 10px;
+      font: 600 10px var(--mono);
+      letter-spacing: .16em;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .h-btn:hover {
+      color: var(--paper);
+      border-color: var(--line2)
+    }
+
+    .h-mid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      pointer-events: none
+    }
+
+    /* ---------- readout panel ---------- */
+    #emailPanel {
+      position: fixed;
+      top: 64px;
+      right: 20px;
+      bottom: 112px;
+      width: calc(var(--panelw) - 20px);
+      z-index: 6;
+      background: rgba(18, 22, 27, .9);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      pointer-events: auto
+    }
+
+    .pn-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .pn-head .t {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      font: 700 10px var(--mono);
+      letter-spacing: .24em;
+      color: var(--muted)
+    }
+
+    .pn-hr {
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    .pn-tier {
+      font: 700 9px var(--mono);
+      letter-spacing: .2em;
+      color: var(--dim);
+      border: 1px solid var(--line);
+      padding: 4px 7px
+    }
+
+    .pn-timer {
+      font: 700 16px var(--mono);
+      font-variant-numeric: tabular-nums;
+      min-width: 52px;
+      text-align: right
+    }
+
+    .pn-scroll {
+      overflow-y: auto;
+      padding: 16px 16px 20px;
+      flex: 1;
+      touch-action: pan-y
+    }
+
+    .pn-l {
+      font: 600 9px var(--mono);
+      letter-spacing: .28em;
+      color: var(--dim);
+      margin: 16px 0 7px
+    }
+
+    .pn-l:first-child {
+      margin-top: 0
+    }
+
+    .pn-from {
+      border: 1px solid var(--line2);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      touch-action: manipulation
+    }
+
+    .pn-from:hover,
+    .pn-from.verify {
+      border-color: var(--paper)
+    }
+
+    .pn-from .fi {
+      flex: 1;
+      min-width: 0
+    }
+
+    .pn-name {
+      font: 700 13px var(--sans);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .pn-addr {
+      font: 400 11px var(--mono);
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px
+    }
+
+    .pn-vbtn {
+      font-size: 15px;
+      color: var(--dim);
+      flex: none
+    }
+
+    .pn-from:hover .pn-vbtn,
+    .pn-from.verify .pn-vbtn {
+      color: var(--paper)
+    }
+
+    .pn-hint {
+      font: 400 9px var(--mono);
+      color: var(--dim);
+      margin-top: 6px;
+      letter-spacing: .06em
+    }
+
+    .pn-sub {
+      font: 700 15px/1.35 var(--sans)
+    }
+
+    .pn-body p {
+      font: 400 12px/1.7 var(--mono);
+      color: #C9CDD2;
+      margin-bottom: 9px
+    }
+
+    .lnk,
+    .att {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font: 600 12px var(--mono);
+      padding: 9px 12px;
+      margin: 4px 0 10px;
+      width: 100%;
+      text-align: left
+    }
+
+    .lnk {
+      color: var(--paper);
+      border: 1px dashed var(--line2)
+    }
+
+    .lnk:hover {
+      border-color: var(--paper);
+      border-style: solid
+    }
+
+    .att {
+      color: var(--muted);
+      border: 1px solid var(--line)
+    }
+
+    #tip {
+      position: fixed;
+      z-index: 40;
+      max-width: 320px;
+      background: var(--ink);
+      border: 1px solid var(--line2);
+      padding: 8px 10px;
+      font: 500 10px/1.5 var(--mono);
+      color: var(--muted);
+      pointer-events: none;
+      display: none;
+      word-break: break-all
+    }
+
+    /* ---------- decision buttons & gates ---------- */
+    #btnFile,
+    #btnReport {
+      position: fixed;
+      bottom: 24px;
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+      padding: 15px 20px;
+      border: 1px solid;
+      min-width: 186px;
+      transition: background .15s, color .15s
+    }
+
+    #btnFile {
+      left: 26px;
+      border-color: var(--safe);
+      color: var(--safe)
+    }
+
+    #btnFile:hover {
+      background: var(--safe);
+      color: var(--ink)
+    }
+
+    #btnReport {
+      right: calc(var(--panelw) + 26px);
+      border-color: var(--danger);
+      color: var(--danger)
+    }
+
+    #btnReport:hover {
+      background: var(--danger);
+      color: var(--ink)
+    }
+
+    .d-name {
+      font: 700 13px var(--mono);
+      letter-spacing: .24em;
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    .d-sub {
+      font: 400 9.5px var(--mono);
+      letter-spacing: .12em;
+      opacity: .75;
+      text-transform: uppercase
+    }
+
+    #dragHint {
+      position: fixed;
+      bottom: 110px;
+      left: calc((100vw - var(--panelw))/2);
+      transform: translateX(-50%);
+      font: 500 10px var(--mono);
+      letter-spacing: .22em;
+      color: var(--dim);
+      z-index: 6;
+      pointer-events: none;
+      text-transform: uppercase;
+      white-space: nowrap
+    }
+
+    .glabel {
+      position: fixed;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity .4s
+    }
+
+    .glabel .g-name {
+      font: 700 12px var(--mono);
+      letter-spacing: .34em
+    }
+
+    .glabel.safe .g-name {
+      color: var(--safe)
+    }
+
+    .glabel.danger .g-name {
+      color: var(--danger)
+    }
+
+    .glabel .g-sub {
+      font: 500 9px var(--mono);
+      letter-spacing: .22em;
+      color: var(--dim);
+      margin-top: 6px
+    }
+
+    body.dim-gates .glabel {
+      opacity: .3
+    }
+
+    /* ---------- verdict ---------- */
+    #verdict {
+      position: fixed;
+      bottom: 106px;
+      left: calc((100vw - var(--panelw))/2);
+      transform: translateX(-50%);
+      width: min(560px, calc(100vw - var(--panelw) - 20px));
+      z-index: 8
+    }
+
+    .v-card {
+      background: rgba(18, 22, 27, .95);
+      border: 1px solid var(--line);
+      border-top: 2px solid var(--paper);
+      backdrop-filter: blur(8px)
+    }
+
+    #verdict.ok .v-card {
+      border-top-color: var(--safe)
+    }
+
+    #verdict.bad .v-card {
+      border-top-color: var(--danger)
+    }
+
+    .v-head {
+      display: flex;
+      gap: 14px;
+      padding: 16px 18px 10px;
+      align-items: flex-start
+    }
+
+    .v-icon {
+      font-size: 22px;
+      margin-top: 2px
+    }
+
+    #verdict.ok .v-icon {
+      color: var(--safe)
+    }
+
+    #verdict.bad .v-icon {
+      color: var(--danger)
+    }
+
+    #vdTitle {
+      font: 700 16px var(--sans)
+    }
+
+    #vdSub {
+      font: 400 11px var(--mono);
+      color: var(--muted);
+      margin-top: 5px;
+      word-break: break-all
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 18px 10px
+    }
+
+    .chip {
+      font: 500 10.5px/1.45 var(--mono);
+      border: 1px solid var(--line2);
+      padding: 6px 9px;
+      color: var(--muted)
+    }
+
+    .v-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px 16px;
+      border-top: 1px solid var(--line)
+    }
+
+    #vdPts {
+      font: 700 12px var(--mono);
+      letter-spacing: .1em;
+      color: var(--safe)
+    }
+
+    #verdict.bad #vdPts {
+      color: var(--danger)
+    }
+
+    /* ---------- end ---------- */
+    .end-wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6vh 20px 9vh
+    }
+
+    #endGrade {
+      font: 700 clamp(90px, 16vw, 150px)/1 var(--sans);
+      margin-top: 10px
+    }
+
+    .grade-S,
+    .grade-A {
+      color: var(--safe)
+    }
+
+    .grade-B {
+      color: var(--amber)
+    }
+
+    .grade-C,
+    .grade-D {
+      color: var(--danger)
+    }
+
+    #endScore {
+      font: 700 40px var(--mono);
+      font-variant-numeric: tabular-nums;
+      margin-top: 8px
+    }
+
+    #endStrip {
+      margin: 26px 0 6px;
+      width: min(560px, 100%)
+    }
+
+    .xp-line {
+      width: min(560px, 100%);
+      display: flex;
+      justify-content: space-between;
+      margin-top: 16px
+    }
+
+    .xpbar {
+      width: min(560px, 100%);
+      height: 4px;
+      background: var(--ink3);
+      margin-top: 10px;
+      position: relative
+    }
+
+    .xpbar i {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: var(--safe);
+      width: 0;
+      transition: width 1.1s cubic-bezier(.2, .8, .2, 1)
+    }
+
+    #endRows {
+      width: min(620px, 100%);
+      max-height: 30vh;
+      overflow-y: auto;
+      margin-top: 20px;
+      border-top: 1px solid var(--line)
+    }
+
+    .rev-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--line);
+      font: 500 11px var(--mono)
+    }
+
+    .rev-ic {
+      font-size: 14px;
+      flex: none;
+      width: 18px
+    }
+
+    .rev-ic.ok {
+      color: var(--safe)
+    }
+
+    .rev-ic.bad {
+      color: var(--danger)
+    }
+
+    .rev-truth {
+      flex: none;
+      width: 56px;
+      font-weight: 700;
+      letter-spacing: .14em
+    }
+
+    .rev-truth.P {
+      color: var(--danger)
+    }
+
+    .rev-truth.L {
+      color: var(--safe)
+    }
+
+    .rev-addr {
+      flex: 1;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .rev-call {
+      flex: none;
+      color: var(--dim);
+      letter-spacing: .08em
+    }
+
+    .end-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 26px;
+      flex-wrap: wrap;
+      justify-content: center
+    }
+
+    /* ---------- howto / toast / fx ---------- */
+    .howto-wrap {
+      width: min(560px, 92vw);
+      margin: 8vh auto
+    }
+
+    .howto-wrap h2 {
+      font: 700 34px var(--sans);
+      margin: 10px 0 8px
+    }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: flex-start
+    }
+
+    .step .s-ic {
+      font-size: 18px;
+      color: var(--paper);
+      flex: none;
+      margin-top: 2px
+    }
+
+    .step h4 {
+      font: 700 12px var(--mono);
+      letter-spacing: .14em
+    }
+
+    .step p {
+      font: 400 11px/1.7 var(--mono);
+      color: var(--muted);
+      margin-top: 6px
+    }
+
+    #toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translate(-50%, -8px);
+      z-index: 30;
+      background: var(--ink2);
+      border: 1px solid var(--line2);
+      padding: 10px 16px;
+      font: 600 11px var(--mono);
+      letter-spacing: .12em;
+      color: var(--paper);
+      opacity: 0;
+      transition: .25s;
+      pointer-events: none;
+      display: flex;
+      gap: 9px;
+      align-items: center
+    }
+
+    #toast.on {
+      opacity: 1;
+      transform: translate(-50%, 0)
+    }
+
+    #flash {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      pointer-events: none;
+      box-shadow: inset 0 0 140px 40px rgba(255, 79, 48, .4);
+      opacity: 0;
+      transition: opacity .5s
+    }
+
+    #flash.on {
+      opacity: 1;
+      transition: none
+    }
+
+    #popLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 6;
+      pointer-events: none
+    }
+
+    .pop {
+      position: fixed;
+      transform: translate(-50%, -50%);
+      font: 700 16px var(--mono);
+      font-variant-numeric: tabular-nums;
+      animation: popUp .95s ease-out forwards
+    }
+
+    .pop .m {
+      font-size: 10px;
+      color: var(--muted);
+      display: block;
+      text-align: center;
+      letter-spacing: .2em;
+      margin-top: 4px
+    }
+
+    @keyframes popUp {
+      0% {
+        opacity: 0;
+        margin-top: 8px
+      }
+
+      12% {
+        opacity: 1
+      }
+
+      100% {
+        opacity: 0;
+        margin-top: -46px
+      }
+    }
+
+    /* ---------- portrait ---------- */
+    @media (max-width:879px) {
+      #emailPanel {
+        top: auto;
+        bottom: 96px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-height: 36vh
+      }
+
+      #verdict {
+        top: 64px;
+        bottom: auto;
+        left: 12px;
+        transform: none;
+        width: auto
+      }
+
+      #btnFile {
+        left: 12px;
+        width: calc(50% - 16px);
+        min-width: 0
+      }
+
+      #btnReport {
+        right: 12px;
+        width: calc(50% - 16px);
+        min-width: 0
+      }
+
+      #dragHint {
+        bottom: calc(36vh + 106px)
+      }
+
+      #hud {
+        padding: 10px 12px
+      }
+
+      #hudScore {
+        font-size: 20px
+      }
+
+      .d-sub {
+        display: none
+      }
+    }
+  </style>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script
+    type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+</head>
+
+<body>
+
+  <div id="stage"></div>
+
+  <div class="glabel safe" id="lblSafe">
+    <div class="g-name">FILE</div>
+    <div class="g-sub">LEGITIMATE MAIL</div>
+  </div>
+  <div class="glabel danger" id="lblPhish">
+    <div class="g-name">REPORT</div>
+    <div class="g-sub">PHISHING MAIL</div>
+  </div>
+  <div id="flash"></div>
+
+  <header id="hud" hidden>
+    <div class="h-left">
+      <span class="brand">PHISHNET</span>
+      <span class="h-tag" id="hudShift">MAIL 01/12</span>
+    </div>
+    <div class="h-mid">
+      <div id="hudScore">0</div>
+    </div>
+    <div class="h-right">
+      <span id="hudStreak">STREAK ×1.0</span>
+      <div id="hudLives"></div>
+      <button class="h-btn" id="hudMute"><i data-lucide="volume-2"></i></button>
+      <button class="h-btn" id="hudQuit"><i data-lucide="log-out"></i>END</button>
+    </div>
+  </header>
+
+  <aside id="emailPanel" hidden>
+    <div class="pn-head">
+      <div class="t"><i data-lucide="fish"></i><span>INTERCEPTED TRANSMISSION</span></div>
+      <div class="pn-hr"><span class="pn-tier" id="pnTier">TIER I</span><span class="pn-timer" id="pnTimer"></span>
+      </div>
+    </div>
+    <div class="pn-scroll">
+      <div class="pn-l">FROM</div>
+      <div class="pn-from" id="pnFrom">
+        <div class="fi">
+          <div class="pn-name" id="pnName"></div>
+          <div class="pn-addr" id="pnAddr"></div>
+        </div>
+        <span class="pn-vbtn"><i data-lucide="fingerprint"></i></span>
+      </div>
+      <div class="pn-hint">HOLD THE SENDER TO FLIP THE ENVELOPE AND READ ITS POSTMARK</div>
+      <div class="pn-l">SUBJECT</div>
+      <div class="pn-sub" id="pnSub"></div>
+      <div class="pn-l">TRANSMISSION</div>
+      <div class="pn-body" id="pnBody"></div>
+    </div>
+  </aside>
+
+  <button id="btnFile" hidden><span class="d-name"><i data-lucide="inbox"></i>FILE <kbd>←</kbd></span><span
+      class="d-sub">looks legitimate</span></button>
+  <button id="btnReport" hidden><span class="d-name"><i data-lucide="shield-alert"></i>REPORT <kbd>→</kbd></span><span
+      class="d-sub">this is phishing</span></button>
+  <div id="dragHint" hidden>DRAG THE ENVELOPE INTO A GATE — OR USE THE ARROW KEYS</div>
+
+  <div id="verdict" hidden>
+    <div class="v-card">
+      <div class="v-head">
+        <span class="v-icon" id="vdIcon"><i data-lucide="shield-check"></i></span>
+        <div>
+          <div id="vdTitle"></div>
+          <div id="vdSub"></div>
+        </div>
+      </div>
+      <div class="chips" id="vdChips"></div>
+      <div class="v-foot">
+        <span id="vdPts"></span>
+        <button class="btn" id="vdContinue">CONTINUE <kbd>SPACE</kbd></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="popLayer"></div>
+  <div id="tip"></div>
+  <div id="toast"></div>
+
+  <!-- ============ AUTH ============ -->
+  <div id="authScreen" class="screen">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="eyebrow">3D PHISHING TRIAGE SIMULATOR</div>
+        <div class="logo" style="margin-top:12px"><span class="l-icon"><i data-lucide="fish"></i></span>
+          <h1 style="font-size:clamp(40px,9vw,58px)">PHISHNET</h1>
+        </div>
+        <p class="lede" style="margin-top:12px">Every envelope is a decision. Sign in to keep your service record.</p>
+        <div class="tabs"><button id="tabSignin" class="on">SIGN IN</button><button id="tabSignup">CREATE
+            ACCOUNT</button></div>
+        <div class="f-l">CALLSIGN</div><input id="aName" autocomplete="username" spellcheck="false"
+          placeholder="e.g. mailmarshal" />
+        <div class="f-l">PASSPHRASE</div><input id="aPass" type="password" autocomplete="current-password"
+          placeholder="min. 4 characters" />
+        <div id="pass2Row" hidden>
+          <div class="f-l">CONFIRM PASSPHRASE</div><input id="aPass2" type="password" />
+        </div>
+        <div id="authErr"></div>
+        <button class="btn primary" id="authSubmit"><i data-lucide="lock"></i><span id="authSubmitLabel">SIGN
+            IN</span></button>
+        <div class="auth-links"><button class="btn ghost" id="authGuest">CONTINUE AS GUEST</button></div>
+        <p class="auth-note">Accounts live in this browser only — the auth module is a drop-in shape for Supabase when
+          you take this multiplayer.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MENU ============ -->
+  <div id="menuScreen" class="screen" hidden>
+    <div class="menu-wrap">
+      <div class="eyebrow">3D PHISHING TRIAGE SIMULATOR</div>
+      <div class="logo" style="margin-top:14px"><span class="l-icon"><i data-lucide="fish"></i></span>
+        <h1>PHISHNET</h1>
+      </div>
+      <p class="lede">You are the mail marshal at Northwind Labs. Twelve envelopes per shift — file the legitimate,
+        report the phish. Three breaches and your shift is over.</p>
+      <div class="rule"></div>
+      <div class="eyebrow" style="margin-bottom:10px">CLEARANCE LEVEL</div>
+      <div class="seg" id="diffSeg">
+        <button data-diff="intern"><span class="d-name">INTERN</span><span class="d-desc">long clock · obvious
+            bait</span><span class="d-mult">×0.8</span></button>
+        <button data-diff="analyst" class="on"><span class="d-name">ANALYST</span><span class="d-desc">standard clock ·
+            mixed bait</span><span class="d-mult">×1.0</span></button>
+        <button data-diff="expert"><span class="d-name">EXPERT</span><span class="d-desc">short clock · advanced
+            bait</span><span class="d-mult">×1.3</span></button>
+      </div>
+      <button class="btn primary" id="btnStart" style="margin-top:18px"><i data-lucide="play"></i>START SHIFT</button>
+      <div class="menu-actions">
+        <button class="btn ghost" id="btnHowto"><i data-lucide="graduation-cap"></i>HOW TO PLAY</button>
+        <button class="btn ghost" id="menuMute"><i data-lucide="volume-2"></i>SOUND</button>
+        <button class="btn ghost" id="btnSignout"><i data-lucide="log-out"></i>SIGN OUT</button>
+      </div>
+      <div class="eyebrow" style="margin:30px 0 10px">SERVICE RECORD — <span id="menuUser"></span></div>
+      <div class="statstrip">
+        <div>
+          <div class="st-l">SHIFTS</div>
+          <div class="st-v" id="st1">0</div>
+        </div>
+        <div>
+          <div class="st-l">BEST</div>
+          <div class="st-v" id="st2">0</div>
+        </div>
+        <div>
+          <div class="st-l">ACCURACY</div>
+          <div class="st-v" id="st3">—</div>
+        </div>
+        <div>
+          <div class="st-l">BEST STREAK</div>
+          <div class="st-v" id="st4">0</div>
+        </div>
+        <div>
+          <div class="st-l">LEVEL</div>
+          <div class="st-v" id="st5">L1</div>
+        </div>
+      </div>
+      <div class="eyebrow" style="margin:26px 0 6px">DEVICE REGISTRY — TOP SORTERS</div>
+      <div id="menuRegistry"></div>
+    </div>
+  </div>
+
+  <!-- ============ END ============ -->
+  <div id="endScreen" class="screen" hidden>
+    <div class="end-wrap">
+      <div class="eyebrow" id="endKind">SHIFT COMPLETE</div>
+      <div id="endGrade" class="grade-A">A</div>
+      <div class="eyebrow" style="margin:10px 0 0">FINAL SCORE</div>
+      <div id="endScore">0</div>
+      <div class="statstrip" id="endStrip">
+        <div>
+          <div class="st-l">ACCURACY</div>
+          <div class="st-v" id="endAcc">—</div>
+        </div>
+        <div>
+          <div class="st-l">CORRECT</div>
+          <div class="st-v" id="endCor">—</div>
+        </div>
+        <div>
+          <div class="st-l">BEST STREAK</div>
+          <div class="st-v" id="endStk">—</div>
+        </div>
+        <div>
+          <div class="st-l">BREACHES</div>
+          <div class="st-v" id="endBrk">—</div>
+        </div>
+      </div>
+      <div class="xp-line">
+        <div class="eyebrow">LEVEL <span id="endLvl">1</span></div>
+        <div class="eyebrow" id="endXp">+0 XP</div>
+      </div>
+      <div class="xpbar"><i id="xpFill"></i></div>
+      <div id="endRows"></div>
+      <div class="end-actions">
+        <button class="btn" id="btnAgain"><i data-lucide="rotate-ccw"></i>NEW SHIFT</button>
+        <button class="btn ghost" id="btnMenu"><i data-lucide="chevron-left"></i>MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HOW TO PLAY ============ -->
+  <div id="howto" class="screen" hidden>
+    <div class="howto-wrap">
+      <div class="eyebrow">FIELD MANUAL</div>
+      <h2>How to triage</h2>
+      <div class="step"><span class="s-ic"><i data-lucide="search"></i></span>
+        <div>
+          <h4>INSPECT</h4>
+          <p>Read the sender, subject, links and attachments in the transmission panel. Hover any link to preview where
+            it really resolves.</p>
+        </div>
+      </div>
+      <div class="step"><span class="s-ic"><i data-lucide="fingerprint"></i></span>
+        <div>
+          <h4>VERIFY THE POSTMARK</h4>
+          <p>Hold the FROM row (or hold <kbd>V</kbd>) to flip the envelope in 3D and read its postmark. Lookalike
+            domains hide there — <b>rn</b> pretending to be <b>m</b>, <b>0</b> pretending to be <b>O</b>,
+            innocent-looking suffixes like "-secure.com".</p>
+        </div>
+      </div>
+      <div class="step"><span class="s-ic"><i data-lucide="move"></i></span>
+        <div>
+          <h4>DECIDE</h4>
+          <p>Grab the envelope and hurl it into a gate — left FILE for legitimate mail, right REPORT for phishing. Arrow
+            keys or the buttons work too.</p>
+        </div>
+      </div>
+      <div class="step"><span class="s-ic"><i data-lucide="timer"></i></span>
+        <div>
+          <h4>BEAT THE CLOCK</h4>
+          <p>The ring around the envelope is your timer. A missed intercept counts as a breach, and three breaches end
+            the shift. Correct calls in a row build a score multiplier.</p>
+        </div>
+      </div>
+      <button class="btn" id="howtoClose" style="margin-top:24px">CLOSE MANUAL</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    /* ================= helpers ================= */
+    const BRAND = 'PHISHNET';
+    const $ = s => document.querySelector(s);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    const easeInCubic = t => t * t * t;
+    const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]] } return a };
+    const icons = () => window.lucide && lucide.createIcons();
+
+    const store = {
+      get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d } catch (e) { return d } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) { } },
+      del(k) { try { localStorage.removeItem(k) } catch (e) { } }
+    };
+    const USERS = 'phishnet.users', SESSION = 'phishnet.session', MUTEK = 'phishnet.muted', DIFFK = 'phishnet.diff';
+
+    /* ================= sound (synthesized, no assets) ================= */
+    const game = { screen: 'boot', diff: store.get(DIFFK, 'analyst'), muted: !!store.get(MUTEK, false) };
+    const SFX = {
+      ctx: null,
+      init() { if (!this.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) this.ctx = new AC() } if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume() },
+      env(g, t, a, d, v) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d) },
+      tone(f0, f1, dur, type = 'sine', vol = .14, delay = 0) {
+        if (game.muted || !this.ctx) return; const t = this.ctx.currentTime + delay;
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t);
+        if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+        this.env(g, t, .008, dur, vol); o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + dur + .05)
+      },
+      noise(dur, f0, f1, vol = .16) {
+        if (game.muted || !this.ctx) return; const t = this.ctx.currentTime, sr = this.ctx.sampleRate;
+        const buf = this.ctx.createBuffer(1, Math.ceil(sr * dur), sr), d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++)d[i] = Math.random() * 2 - 1;
+        const src = this.ctx.createBufferSource(); src.buffer = buf;
+        const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(f0, t); lp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+        const g = this.ctx.createGain(); this.env(g, t, .01, dur, vol);
+        src.connect(lp).connect(g).connect(this.ctx.destination); src.start(t)
+      },
+      click() { this.tone(1600, 1150, .05, 'square', .045) },
+      grab() { this.tone(620, 880, .06, 'triangle', .06) },
+      whoosh() { this.noise(.3, 2600, 220) },
+      capture() { this.tone(320, 980, .16, 'sine', .13); this.tone(640, 1500, .2, 'sine', .07, .05) },
+      correct() { this.tone(660, 660, .09, 'sine', .13); this.tone(990, 990, .16, 'sine', .13, .1) },
+      wrong() { this.tone(150, 105, .24, 'sawtooth', .15); this.tone(96, 78, .26, 'square', .09, .02) },
+      miss() { this.tone(520, 150, .4, 'sine', .15) },
+      ui() { this.tone(1250, 1250, .04, 'square', .04) }
+    };
+    window.addEventListener('pointerdown', () => SFX.init(), { capture: true });
+
+    /* ================= email intelligence ================= */
+    /* t: tier 1-3 · phish: verdict · why: red flags / trust markers */
+    const EMAILS = [
+      // ---- TIER I ----
+      {
+        t: 1, phish: true, name: 'PayPal Support', addr: 'service@paypa1-secure.com', subj: 'URGENT: Your account has been limited',
+        body: ['Dear Customer,', 'We detected unusual activity and have temporarily limited your account. You have 24 hours to restore access or the account will be permanently closed.', 'Please confirm your identity to lift the restriction.'],
+        link: { text: 'Restore Account Now', href: 'http://paypa1-secure.com-verify.top/login?id=8817' },
+        why: ['Domain is a lookalike — "paypa1" uses the digit 1, not paypal.com', 'Generic "Dear Customer" instead of your name', 'Manufactured 24-hour deadline to force a panic click', 'The link resolves to an unrelated .top domain'], tag: 'Classic account-suspension bait'
+      },
+      {
+        t: 1, phish: true, name: 'Microsoft Security Team', addr: 'security-alert@rnicrosoft-verify.xyz', subj: 'Unusual sign-in activity (2)',
+        body: ['We detected a sign-in to your Microsoft account from a new device in Moscow, Russia.', 'If this was not you, your account may be compromised. Verify your password immediately to secure the account.'],
+        link: { text: 'Review recent activity', href: 'http://rnicrosoft-verify.xyz/verify' },
+        why: ['"rnicrosoft" mimics "microsoft" — r+n posing as m', 'Throwaway .xyz domain; Microsoft owns microsoft.com', 'Real alerts never ask you to re-enter your password via link', 'Scare tactics: foreign location plus implied breach'], tag: 'Homoglyph domain spoof'
+      },
+      {
+        t: 1, phish: true, name: 'Netflix Billing', addr: 'billing@netflix-account-update.cc', subj: 'Payment method declined — action required',
+        body: ['Hello,', 'We were unable to process your latest payment. Your membership will be suspended within 48 hours.', 'Please update your billing information to avoid interruption of your service.'],
+        link: { text: 'Update Payment Method', href: 'http://netflix-account-update.cc/pay' },
+        why: ['Netflix sends from netflix.com, not netflix-account-update.cc', 'Pressure deadline: "48 hours"', 'Asks you to submit card details through an external link'], tag: 'Fake billing slip'
+      },
+      {
+        t: 1, phish: true, name: 'Crypto Giveaway Event', addr: 'promo@eth-2x-giveaway.io', subj: 'You have been selected — 2× your ETH today only',
+        body: ['Congratulations! Our anniversary event doubles every deposit received today.', 'Send 0.2 ETH to the event address and receive 0.4 ETH back within 10 minutes. Only 73 slots remain.'],
+        link: { text: 'Claim Your Reward', href: 'http://eth-2x-giveaway.io/claim' },
+        why: ['If it sounds too good to be true, it is', 'Requires sending crypto first — transfers are irreversible, no refunds', 'Disposable .io domain unrelated to any real company', 'Fake scarcity: "73 slots remain"'], tag: 'Giveaway scam'
+      },
+      {
+        t: 1, phish: false, name: 'Sarah Chen · People Ops', addr: 's.chen@northwind-labs.com', subj: 'Benefits enrollment closes Friday',
+        body: ['Hi all,', 'A reminder that open enrollment for 2025 benefits closes this Friday at 5pm. No action is needed if you are keeping your current plan.', 'You can review options on the HR portal — it is linked from the intranet home page.'],
+        why: ['Known internal colleague on the real company domain', 'No links — points you to the intranet instead', 'No credentials or personal data requested'], tag: null
+      },
+      {
+        t: 1, phish: false, name: 'GitHub', addr: 'noreply@github.com', subj: '[northwind] New sign-in from Firefox on Linux',
+        body: ['A sign-in to your account was detected from a new device.', 'Device: Firefox on Linux · IP 51.104.xx.xx · Approximate location: London, UK', 'If this was you, you can disregard this email.'],
+        why: ['Exact sender domain: github.com', 'Informational only — no link asking you to log in', 'Standard security-alert wording; tells you to ignore it if legit'], tag: null
+      },
+      {
+        t: 1, phish: true, name: 'DHL Express', addr: 'parcel-notice@dhl-shipping-alert.top', subj: 'Your parcel is on hold — customs fee unpaid',
+        body: ['Shipment #GB-88231 is being held at customs.', 'A small fee of £1.99 is required to release the package for delivery today.'],
+        link: { text: 'Pay customs fee', href: 'http://dhl-shipping-alert.top/fee' },
+        why: ['DHL uses dhl.com, not dhl-shipping-alert.top', 'A tiny fee is a classic hook — too small to trigger suspicion', 'Link destination matches no real DHL address'], tag: 'Small-fee delivery scam'
+      },
+      {
+        t: 1, phish: false, name: 'Marcus Webb', addr: 'm.webb@northwind-labs.com', subj: 'Design sync moved to 15:00',
+        body: ['Hey — pushing our sync to 3pm today, conflict at 2.', 'Same room, agenda unchanged. See you there.'],
+        why: ['Known internal colleague on the real company domain', 'Plain meeting logistics — no links, no urgency, no asks'], tag: null
+      },
+      // ---- TIER II ----
+      {
+        t: 2, phish: true, name: 'LinkedIn', addr: 'jobs-noreply@linkedin.com', subj: 'Your application was viewed — see which recruiters are interested',
+        body: ['Good news — your profile was viewed by 4 recruiters this week.', 'See who is interested and respond before they move on to other candidates.'],
+        link: { text: 'View recruiter activity', href: 'http://careers-hub-net.com/linkedin/verify' },
+        why: ['The sender domain is real — but hover the link: it resolves to careers-hub-net.com', 'A credential-harvesting page posing as LinkedIn', '"Before they move on" manufactures urgency'], tag: 'True sender, poisoned link'
+      },
+      {
+        t: 2, phish: false, name: 'Google', addr: 'no-reply@accounts.google.com', subj: 'Security alert: new device signed in',
+        body: ['A new device just signed in to your Google Account.', 'Samsung Galaxy S23 · London, United Kingdom', 'If you do not recognize this activity, secure your account now.'],
+        link: { text: 'Check activity', href: 'https://accounts.google.com/security-checkup' },
+        why: ['Genuine sender: accounts.google.com', 'The link resolves to a real google.com path — hover to confirm', 'New-sign-in alerts are routine and expected'], tag: null
+      },
+      {
+        t: 2, phish: true, name: 'Michael Tan · CEO', addr: 'm.tan@northwind-labs-secure.com', subj: 'Urgent — need this handled before I land',
+        body: ['I am boarding a flight and cannot take calls.', 'We need to close the vendor payment today. Please set up a £14,600 transfer to the new account attached and confirm by email only — keep this between us for now.'],
+        att: { name: 'new_account_details.pdf.exe', size: '412 KB' },
+        why: ['Lookalike internal domain — real is northwind-labs.com, this adds "-secure"', 'Textbook CEO fraud: urgency + secrecy + unusual payment', 'Attachment is an .exe disguised in a double extension', '"Confirm by email only" blocks verification by voice'], tag: 'CEO fraud / BEC'
+      },
+      {
+        t: 2, phish: false, name: 'DocuSign', addr: 'dse@docusign.net', subj: 'Completed: Q3 vendor agreement (Northwind Labs)',
+        body: ['The document you were CC\u2019d on has been completed by all parties.', 'Document ID: 9f3c-44a1-7b21 · Completed 14:32 GMT.'],
+        link: { text: 'View completed document', href: 'https://docusign.net/documents/9f3c44a17b21' },
+        why: ['Genuine DocuSign sender domain: docusign.net', 'The link resolves to docusign.net — hover to confirm', 'You were only CC\u2019d; nothing is being asked of you'], tag: null
+      },
+      {
+        t: 2, phish: true, name: 'DocuSign', addr: 'dse@d0cusingn-alerts.com', subj: 'Document awaiting your signature — expires today',
+        body: ['You have one document awaiting your signature: "Payroll_Direct_Deposit_Update.pdf".', 'This envelope expires today at midnight. Sign now to avoid processing delays.'],
+        link: { text: 'Review document', href: 'http://d0cusingn-alerts.com/envelope/sign' },
+        why: ['"d0cusingn" — the digit 0 replaces the letter O', 'Expiry pressure is engineered to stop you checking', 'Payroll direct-deposit changes are a classic salary-redirect attack'], tag: 'Zero-for-O spoof'
+      },
+      {
+        t: 2, phish: false, name: 'Amazon.co.uk', addr: 'ship-confirm@amazon.co.uk', subj: 'Your order has shipped — order #026-881234',
+        body: ['Thanks for your order. Arriving: Thursday, 12 June.', 'This order contains: Anker USB-C cable ×1.'],
+        why: ['Exact amazon.co.uk sender domain', 'Purely informational — no action or login requested'], tag: null
+      },
+      {
+        t: 2, phish: true, name: 'Amazon', addr: 'orders@amazon-delivery-reschedule.info', subj: 'Your order is on hold — confirm delivery address',
+        body: ['We could not verify your delivery address for order #026-991182.', 'A £2.00 balance must be settled before redelivery. Confirm your address and card details today.'],
+        link: { text: 'Resolve delivery issue', href: 'http://amazon-delivery-reschedule.info/confirm' },
+        why: ['Real Amazon domains are amazon.com / amazon.co.uk — not .info', 'Small-fee pressure again: £2.00 to trigger a quick click', 'Amazon never asks for card details through an email link'], tag: 'Domain-suffix impersonation'
+      },
+      {
+        t: 2, phish: false, name: 'Stripe', addr: 'receipts@stripe.com', subj: 'Your payout of £2,940.00 has been paid out',
+        body: ['A payout of £2,940.00 was deposited to your bank account ending in 4417.', 'This is an automated receipt — no action is required.'],
+        why: ['Genuine stripe.com sender', 'Receipt only — no links, no login, no action required'], tag: null
+      },
+      {
+        t: 2, phish: true, name: 'IT Helpdesk · Northwind Labs', addr: 'helpdesk@northwind-labs-mail.com', subj: 'Your password expires in 4 hours',
+        body: ['Password policy requires periodic renewal. Your current password expires in 4 hours.', 'Click below to keep your current password and avoid being locked out.'],
+        link: { text: 'Keep current password', href: 'http://northwind-labs-mail.com/keep' },
+        why: ['Lookalike internal domain — real is northwind-labs.com, not "-mail.com"', 'Real IT never lets you "keep" a password by link — that is harvesting', 'A short countdown discourages you from verifying'], tag: 'Internal lookalike'
+      },
+      // ---- TIER III ----
+      {
+        t: 3, phish: false, name: 'Monzo Bank', addr: 'no-reply@monzo.com', subj: 'We blocked a payment you didn\u2019t make',
+        body: ['We blocked a card payment of £249.99 that did not look like you.', 'We will never ask you to move money or share a code. If you want to check, call the number on the back of your card — not one from an email.'],
+        why: ['Genuine urgency is normal — banks do block payments in real time', 'Crucially: no links, and it sends you to official channels', 'It explicitly warns about exactly the scams imposters run'], tag: 'Real alert that feels like a scam'
+      },
+      {
+        t: 3, phish: true, name: 'Slack', addr: 'notify@slack.com', subj: 'You have 2 new mentions in #general',
+        body: ['Here is what you missed: @you in #general — "can you check the deploy before the standup?"', 'View your mentions to catch up on the thread.'],
+        link: { text: 'Open #general in Slack', href: 'http://slack-verify-login.com/mentions' },
+        why: ['The sender domain is real — but the link resolves to slack-verify-login.com', 'At tier three the sender alone can no longer be trusted — always check links', 'A mundane, believable context lowers your guard'], tag: 'Real sender, redirected link'
+      },
+      {
+        t: 3, phish: false, name: 'Dropbox', addr: 'no-reply@dropbox.com', subj: 'Aria Kwon shared "Q4_roadmap.pptx" with you',
+        body: ['Aria Kwon shared a file with you via Dropbox.', 'File: Q4_roadmap.pptx · 8.4 MB.'],
+        link: { text: 'Open in Dropbox', href: 'https://dropbox.com/s/q4roadmap-share' },
+        why: ['Sender and link both resolve to genuine dropbox.com', 'Expected context — a colleague sharing a work file', 'Consistency between sender, link and context is the signal'], tag: null
+      },
+      {
+        t: 3, phish: true, name: 'Dropbox', addr: 'no-reply@dropbox.com', subj: 'Shared with you: "Team_salaries_final.xlsx"',
+        body: ['John Marsh shared a file with you via Dropbox.', 'This file expires in 24 hours — view before access is removed.'],
+        link: { text: 'View shared file', href: 'https://dropbox-share-view.site/s/team-salaries' },
+        why: ['The sender looks perfect — but the link resolves to dropbox-share-view.site', '"Expires in 24 hours" is urgency bolted onto a mundane event', 'A seductive filename is bait for the curious — at this tier, sender identity proves nothing'], tag: 'Spoofed sender, poisoned link'
+      },
+      {
+        t: 3, phish: true, name: 'Zoom', addr: 'no-reply@zoom.us', subj: 'Your meeting recording is available',
+        body: ['Your recorded meeting from Tuesday is ready: "Q3 Review — 48 min".', 'Download is available for 3 days only.'],
+        link: { text: 'Download recording', href: 'http://zoom-rec-download.click/meeting/8821' },
+        why: ['A real-looking zoom.us sender, but the link goes to zoom-rec-download.click', '.click is a throwaway TLD with no relation to Zoom', 'Recording downloads are a common lure for credential pages'], tag: 'Recording lure'
+      },
+      {
+        t: 3, phish: false, name: 'Thames Water', addr: 'billing@thameswater.co.uk', subj: 'Your bill is ready to view',
+        body: ['Your statement for June is ready in your online account.', 'Direct debit customers do not need to do anything — payment will be taken as usual on the 15th.'],
+        why: ['Genuine utility domain', 'No links — it tells you to reach your account your own way', 'Explicit "no action needed" for direct debit customers'], tag: null
+      },
+      {
+        t: 3, phish: true, name: 'Instagram', addr: 'security@instagram-support.email', subj: 'Copyright violation reported against your account',
+        body: ['A complaint was filed against your account for copyright infringement.', 'If you believe this is an error, submit an appeal within 24 hours or your account will be permanently disabled.'],
+        link: { text: 'Submit appeal', href: 'http://instagram-support.email/appeal-form' },
+        why: ['Real Instagram mail comes from instagram.com — ".email" is a junk TLD', 'A 24-hour deletion threat is engineered panic', 'Appeal forms harvest username and password from distressed users'], tag: 'Appeal-form trap'
+      },
+      {
+        t: 3, phish: false, name: 'Microsoft 365', addr: 'microsoft-noreply@microsoft.com', subj: 'Your subscription renews on 1 July',
+        body: ['Microsoft 365 Business renews automatically on 1 July for £19.80 per user per month.', 'To make changes, sign in to your account from the Microsoft admin centre.'],
+        why: ['Genuine microsoft.com sender', 'No login link inside the email — it directs you to navigate there yourself, the correct pattern'], tag: null
+      },
+      {
+        t: 3, phish: true, name: 'Mail Administrator', addr: 'postmaster@rnail-northwind-labs.com', subj: 'Mailbox storage full — quota exceeded',
+        body: ['Your mailbox has reached its 20 GB limit. Incoming messages will be rejected until the quota is resolved.', 'Verify your mailbox below to retain full delivery.'],
+        link: { text: 'Verify mailbox', href: 'http://rnail-northwind-labs.com/quota' },
+        why: ['"rnail" uses the r-n homoglyph to imitate "mail"', 'Real quota notices never ask you to "verify" — quota is managed server-side', '"Messages will be rejected" weaponises fear of missing out'], tag: 'Homoglyph internal spoof'
+      }
+    ];
+
+    const DIFFS = {
+      intern: { mult: .8, time: 14, tiers: [1, 2] },
+      analyst: { mult: 1, time: 11, tiers: [1, 2, 3] },
+      expert: { mult: 1.3, time: 8, tiers: [2, 3] }
+    };
+
+    /* ================= auth (local, Supabase-shaped) ================= */
+    async function hash(s) {
+      try {
+        if (crypto && crypto.subtle) {
+          const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('pn::' + s));
+          return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      } catch (e) { }
+      let h = 5381; for (let i = 0; i < s.length; i++)h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+      return 'f' + h.toString(16);
+    }
+    const defStats = () => ({ shifts: 0, best: 0, bestAcc: 0, bestStreak: 0, correct: 0, total: 0, xp: 0 });
+    let currentUser = null;   // {name, stats, guest}
+    const loadUsers = () => store.get(USERS, {});
+    const saveUsers = u => store.set(USERS, u);
+    function ensureRecord(name, phash) {
+      const u = loadUsers();
+      if (!u[name]) u[name] = { h: phash || null, created: Date.now(), stats: defStats() };
+      if (!u[name].stats) u[name].stats = defStats();
+      saveUsers(u); return u[name];
+    }
+    function persistStats() {
+      if (!currentUser) return;
+      const u = loadUsers(); const key = currentUser.guest ? '__guest' : currentUser.name;
+      u[key] = u[key] || { stats: defStats() }; u[key].stats = currentUser.stats; saveUsers(u);
+    }
+
+    /* ================= three.js scene ================= */
+    const stage = $('#stage');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    stage.appendChild(renderer.domElement);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0d10);
+    scene.fog = new THREE.Fog(0x0b0d10, 14, 34);
+    const FOVR = THREE.MathUtils.degToRad(21), CAMD = 11;
+    const camera = new THREE.PerspectiveCamera(42, 1, .1, 100);
+
+    scene.add(new THREE.HemisphereLight(0x3a4250, 0x14171c, .95));
+    const key = new THREE.DirectionalLight(0xfff2df, 1.15); key.position.set(4, 6, 6); scene.add(key);
+    const rim = new THREE.DirectionalLight(0xd9e4de, .55); rim.position.set(-4, 4, -6); scene.add(rim);
+
+    /* soft round sprite textures (particles / shadow) */
+    function softDot(rgb) {
+      const c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d'); const g = x.createRadialGradient(32, 32, 0, 32, 32, 30);
+      g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(1, `rgba(${rgb},0)`);
+      x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+    const texWhite = softDot('255,255,255'), texBlack = softDot('0,0,0');
+
+    /* floor: quiet concentric rings */
+    const floorRings = []; const ringSpeeds = [];
+    {
+      const g = new THREE.Group(); g.position.y = -2.6; scene.add(g);
+      for (let i = 0; i < 9; i++) {
+        const r = 1.7 + i * 1.5, seg = 120, pts = [];
+        for (let j = 0; j < seg; j++) { const a = j / seg * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)) }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0x1d242b, transparent: true, opacity: Math.max(.07, .5 - i * .052) });
+        const ring = new THREE.LineLoop(geo, mat); g.add(ring); floorRings.push(ring);
+        ringSpeeds.push((i % 2 ? 1 : -1) * (.018 + i * .004));
+      }
+    }
+
+    /* ambient dust */
+    let dust, dustPos, dustSpeed;
+    {
+      const N = 220; dustPos = new Float32Array(N * 3); dustSpeed = new Float32Array(N);
+      for (let i = 0; i < N; i++) {
+        dustPos[i * 3] = (Math.random() * 2 - 1) * 14; dustPos[i * 3 + 1] = -2.5 + Math.random() * 8; dustPos[i * 3 + 2] = -18 + Math.random() * 20;
+        dustSpeed[i] = .05 + Math.random() * .12;
+      }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+      dust = new THREE.Points(geo, new THREE.PointsMaterial({ size: .1, map: texWhite, transparent: true, opacity: .4, color: 0x53606b, depthWrite: false }));
+      scene.add(dust);
+    }
+
+    /* gates */
+    function makeGate(hex) {
+      const group = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.02, .03, 10, 72), new THREE.MeshBasicMaterial({ color: hex }));
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(.96, 48), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: .05, side: THREE.DoubleSide }));
+      const ticks = new THREE.Group();
+      for (let i = 0; i < 12; i++) {
+        const a = i / 12 * Math.PI * 2;
+        const t = new THREE.Mesh(new THREE.BoxGeometry(.015, .11, .015), new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: .55 }));
+        t.position.set(Math.cos(a) * 1.26, Math.sin(a) * 1.26, 0); t.rotation.z = a - Math.PI / 2; ticks.add(t);
+      }
+      group.add(ring, disc, ticks); scene.add(group);
+      return { group, ring, disc, color: hex, pop: 0 };
+    }
+    const gates = { safe: makeGate(0x3fbf7f), phish: makeGate(0xff4f30) };
+
+    /* ---------- envelope ---------- */
+    const envHolder = new THREE.Group(); scene.add(envHolder);
+    const envGroup = new THREE.Group(); envHolder.add(envGroup);
+    const BASE = new THREE.Vector3(0, .18, 0);
+    let envS = 1, gateX = 5, CAPTURE_X = 4.5, camShift = 0;
+
+    const paperMat = new THREE.MeshStandardMaterial({ color: 0xeae6db, roughness: .85 });
+    const flapMat = new THREE.MeshStandardMaterial({ color: 0xdfdacd, roughness: .9 });
+    const inkMat = new THREE.MeshBasicMaterial({ color: 0xa9a294 });
+    {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(3.1, 2.05, .1), paperMat); envGroup.add(body);
+      // front flap (triangle)
+      const sh = new THREE.Shape(); sh.moveTo(-1.55, 1.025); sh.lineTo(1.55, 1.025); sh.lineTo(0, -.02); sh.lineTo(-1.55, 1.025);
+      const flap = new THREE.Mesh(new THREE.ShapeGeometry(sh), flapMat); flap.position.z = .052; envGroup.add(flap);
+      const outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(
+        [new THREE.Vector3(-1.55, 1.025, .054), new THREE.Vector3(1.55, 1.025, .054), new THREE.Vector3(0, -.02, .054)]),
+        new THREE.LineBasicMaterial({ color: 0x9b968a }));
+      envGroup.add(outline);
+      // inner V creases
+      const crease = (sx) => {
+        const L = Math.hypot(1.55, 1.005);
+        const m = new THREE.Mesh(new THREE.BoxGeometry(L, .022, .012), inkMat);
+        m.position.set(sx * .775, -.5225, .051); m.rotation.z = sx * Math.atan2(1.005, 1.55); envGroup.add(m);
+      };
+      crease(-1); crease(1);
+      // seal
+      const seal = new THREE.Mesh(new THREE.CircleGeometry(.12, 24), new THREE.MeshBasicMaterial({ color: 0x35393f }));
+      seal.position.set(0, -.02, .056); envGroup.add(seal);
+    }
+    /* postmark (canvas → texture on the back) */
+    const pmCanvas = document.createElement('canvas'); pmCanvas.width = 512; pmCanvas.height = 288;
+    const pmTex = new THREE.CanvasTexture(pmCanvas);
+    const postmark = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.4), new THREE.MeshBasicMaterial({ map: pmTex, transparent: true }));
+    postmark.position.set(0, 0, -.053); postmark.rotation.y = Math.PI; envGroup.add(postmark);
+
+    function drawPostmark(addr) {
+      const x = pmCanvas.getContext('2d'); x.clearRect(0, 0, 512, 288);
+      const ink = '#57534a'; x.strokeStyle = ink; x.fillStyle = ink; x.textAlign = 'center';
+      x.save(); x.translate(256, 140);
+      x.lineWidth = 6; x.beginPath(); x.arc(0, 0, 118, 0, Math.PI * 2); x.stroke();
+      x.lineWidth = 2; x.beginPath(); x.arc(0, 0, 104, 0, Math.PI * 2); x.stroke();
+      x.font = '700 15px "JetBrains Mono",monospace'; x.fillText('P O S T M A R K', 0, -62);
+      let domain = (addr.split('@')[1] || addr).toUpperCase();
+      let lines = [domain];
+      x.font = '700 26px "JetBrains Mono",monospace';
+      if (x.measureText(domain).width > 176) {
+        const i = domain.lastIndexOf('.', domain.length - 5);
+        if (i > 0) lines = [domain.slice(0, i), domain.slice(i + 1)];
+      }
+      let size = 26;
+      while (size > 13) {
+        x.font = `700 ${size}px "JetBrains Mono",monospace`;
+        if (Math.max(...lines.map(l => x.measureText(l).width)) <= 176) break; size--;
+      }
+      lines.forEach((l, i) => x.fillText(l, 0, -6 + i * (size + 8) - (lines.length > 1 ? (size + 8) / 2 : 0)));
+      x.font = '500 13px "JetBrains Mono",monospace'; x.fillText('SORT 06:42', 0, 72);
+      x.lineWidth = 4; x.lineCap = 'round';
+      for (let k = 0; k < 3; k++) {
+        x.beginPath();
+        for (let px = -150; px <= 150; px += 6) {
+          const py = 94 + k * 15 + Math.sin((px + 150) / 46 + k * 1.3) * 7;
+          px === -150 ? x.moveTo(px, py) : x.lineTo(px, py);
+        } x.stroke();
+      }
+      x.restore(); pmTex.needsUpdate = true;
+    }
+    /* postage stamp on the back */
+    const stCanvas = document.createElement('canvas'); stCanvas.width = 160; stCanvas.height = 200;
+    {
+      const x = stCanvas.getContext('2d'); const ink = '#57534a';
+      x.strokeStyle = ink; x.lineWidth = 3; x.strokeRect(8, 8, 144, 184);
+      x.lineWidth = 1; x.strokeRect(16, 16, 128, 168);
+      x.beginPath(); x.ellipse(72, 92, 34, 20, 0, 0, Math.PI * 2); x.stroke();      // fish body
+      x.beginPath(); x.moveTo(104, 92); x.lineTo(128, 74); x.lineTo(128, 110); x.closePath(); x.stroke(); // tail
+      x.beginPath(); x.arc(52, 86, 3.5, 0, Math.PI * 2); x.fillStyle = ink; x.fill(); // eye
+      x.font = '700 11px "JetBrains Mono",monospace'; x.textAlign = 'center'; x.fillText('1st', 72, 172);
+    }
+    const stTex = new THREE.CanvasTexture(stCanvas);
+    const stamp = new THREE.Mesh(new THREE.PlaneGeometry(.55, .68), new THREE.MeshBasicMaterial({ map: stTex, transparent: true }));
+    stamp.position.set(.95, .45, -.053); stamp.rotation.y = Math.PI; envGroup.add(stamp);
+
+    /* timer ring */
+    const RSEG = 60;
+    let timerRing, timerMat;
+    {
+      const pos = new Float32Array(RSEG * 2 * 3); const R = 2.32;
+      for (let i = 0; i < RSEG; i++) {
+        const a0 = -Math.PI / 2 + i / RSEG * Math.PI * 2, a1 = a0 + (Math.PI * 2 / RSEG) * .82;
+        pos[i * 6] = Math.cos(a0) * R; pos[i * 6 + 1] = Math.sin(a0) * R; pos[i * 6 + 2] = 0;
+        pos[i * 6 + 3] = Math.cos(a1) * R; pos[i * 6 + 4] = Math.sin(a1) * R; pos[i * 6 + 5] = 0;
+      }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      timerMat = new THREE.LineBasicMaterial({ color: 0xedeae2, transparent: true, opacity: .9 });
+      timerRing = new THREE.LineSegments(geo, timerMat); timerRing.visible = false; envHolder.add(timerRing);
+    }
+    const C_PAPER = new THREE.Color(0xedeae2), C_AMBER = new THREE.Color(0xffb224), C_DANGER = new THREE.Color(0xff4f30);
+    function ringProgress(p) {
+      timerRing.geometry.setDrawRange(0, Math.max(0, Math.ceil(p * RSEG)) * 2);
+      if (p > .5) timerMat.color.copy(C_PAPER);
+      else if (p > .25) timerMat.color.lerpColors(C_AMBER, C_PAPER, (p - .25) / .25);
+      else timerMat.color.lerpColors(C_DANGER, C_AMBER, p / .25);
+    }
+
+    /* blob shadow */
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4),
+      new THREE.MeshBasicMaterial({ map: texBlack, transparent: true, opacity: .32, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2; shadow.position.y = -2.58; scene.add(shadow);
+
+    /* particle bursts */
+    const bursts = [];
+    function burst(pos, hex, n = 26, speed = 4) {
+      const geo = new THREE.BufferGeometry();
+      const arr = new Float32Array(n * 3), vel = [];
+      for (let i = 0; i < n; i++) {
+        arr[i * 3] = pos.x; arr[i * 3 + 1] = pos.y; arr[i * 3 + 2] = pos.z;
+        const v = new THREE.Vector3().randomDirection().multiplyScalar(speed * (.35 + Math.random() * .8));
+        v.z += 1.2; vel.push(v);
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+      const mat = new THREE.PointsMaterial({ size: .17, map: texWhite, transparent: true, opacity: .95, color: hex, depthWrite: false });
+      const p = new THREE.Points(geo, mat); scene.add(p);
+      bursts.push({ p, vel, life: .85, max: .85 });
+    }
+
+    /* ---------- layout ---------- */
+    let PANELW = 0;
+    function applyLayout() {
+      const W = innerWidth, H = innerHeight;
+      renderer.setSize(W, H);
+      const wide = W >= 880;
+      PANELW = (wide && game.screen === 'playing') ? clamp(W * .24, 300, 420) : 0;
+      document.documentElement.style.setProperty('--panelw', PANELW + 'px');
+      const aspect = W / H;
+      camera.aspect = aspect; camera.updateProjectionMatrix();
+      const halfWenv = Math.tan(FOVR) * CAMD * aspect;
+      camShift = PANELW ? (PANELW / W) * halfWenv : 0;
+      const gz = wide ? -.6 : -6;
+      const halfWgate = Math.tan(FOVR) * (CAMD - gz) * aspect;
+      const marginPx = wide ? (W - PANELW) / 2 - 70 : W / 2 - 36;
+      let gx = (marginPx / (W / 2)) * halfWgate;
+      gx = wide ? clamp(gx, 3.2, 5) : clamp(gx, 1.9, 3.4);
+      gateX = gx; CAPTURE_X = gx - .5;
+      envS = clamp(halfWenv / 3.4, .68, 1);
+      const gateS = wide ? clamp(gx / 5, .72, 1) : clamp(gx / 3, .5, .7);
+      const gy = wide ? .18 : .55; BASE.set(0, wide ? .18 : .6, 0);
+      gates.safe.group.position.set(-gx, gy, gz); gates.phish.group.position.set(gx, gy, gz);
+      gates.safe.group.scale.setScalar(gateS); gates.phish.group.scale.setScalar(gateS);
+      envHolder.scale.setScalar(envS);
+      shadow.scale.setScalar(envS);
+    }
+    addEventListener('resize', applyLayout);
+
+    /* ---------- envelope state ---------- */
+    const env = {
+      state: 'ambient', t: 0, tT: 0, current: null, locked: false,
+      vel: new THREE.Vector3(), dragTarget: new THREE.Vector3(),
+      flip: 0, flipTarget: 0, hoverTilt: 0, timer: 0, timerMax: 1,
+      from: new THREE.Vector3(), mid: new THREE.Vector3(), prevPos: new THREE.Vector3(), captureSide: null
+    };
+    const tmpV = new THREE.Vector3();
+    function resetEnv() {
+      envGroup.rotation.set(0, 0, 0); envHolder.visible = true;
+      envHolder.scale.setScalar(envS); envHolder.position.copy(BASE);
+      env.flip = 0; env.flipTarget = 0; env.vel.set(0, 0, 0); env.hoverTilt = 0;
+    }
+    function updateEnv(dt, time) {
+      env.flip = lerp(env.flip, env.flipTarget, 1 - Math.pow(.002, dt));
+      env.hoverTilt = lerp(env.hoverTilt, env.hoverTiltT || 0, 1 - Math.pow(.01, dt));
+      switch (env.state) {
+        case 'ambient':
+          envHolder.position.lerp(BASE, 1 - Math.pow(.01, dt));
+          envGroup.rotation.y = env.flip + time * .32;
+          envGroup.rotation.z = Math.sin(time * .6) * .05 + env.hoverTilt;
+          envGroup.rotation.x = Math.sin(time * .5) * .06;
+          timerRing.visible = false;
+          break;
+        case 'flyin': {
+          env.t += dt / .75; const k = easeOutCubic(Math.min(1, env.t));
+          envHolder.position.lerpVectors(env.from, BASE, k);
+          envGroup.rotation.set(lerp(.4, 0, k), lerp(2.6, 0, k), lerp(-.3, 0, k));
+          if (env.t >= 1) env.state = 'idle';
+          break;
+        }
+        case 'idle': {
+          tmpV.set(BASE.x, BASE.y + Math.sin(time * 1.4) * .07, BASE.z);
+          envHolder.position.lerp(tmpV, 1 - Math.pow(.001, dt));
+          envGroup.rotation.y = env.flip * Math.PI + Math.sin(time * .8) * .03;
+          envGroup.rotation.z = Math.sin(time * .9) * .04 + env.hoverTilt;
+          envGroup.rotation.x = Math.sin(time * 1.1) * .04;
+          break;
+        }
+        case 'drag': {
+          envHolder.position.lerp(env.dragTarget, 1 - Math.pow(.0001, dt));
+          tmpV.copy(envHolder.position).sub(env.prevPos).divideScalar(Math.max(dt, .001));
+          env.vel.lerp(tmpV, .35);
+          envGroup.rotation.z = clamp(-env.vel.x * .12, -.6, .6);
+          envGroup.rotation.x = clamp(env.vel.y * .08, -.4, .4);
+          if (Math.abs(envHolder.position.x) > CAPTURE_X) {
+            drag.active = false;
+            commitDecision(envHolder.position.x > 0 ? 'report' : 'file');
+          }
+          break;
+        }
+        case 'thrown': {
+          env.tT += dt;
+          envHolder.position.addScaledVector(env.vel, dt);
+          env.vel.multiplyScalar(1 - .5 * dt);
+          envGroup.rotation.z += env.vel.x * dt * .8;
+          envGroup.rotation.y += dt * 2;
+          if (Math.abs(envHolder.position.x) > CAPTURE_X) { commitDecision(envHolder.position.x > 0 ? 'report' : 'file'); break; }
+          if (env.tT > 1.5 && env.vel.length() < 1) env.state = 'idle';
+          break;
+        }
+        case 'captured': {
+          env.t += dt / .45; const k = easeInCubic(Math.min(1, env.t));
+          const g = (env.captureSide === 'report' ? gates.phish : gates.safe).group.position;
+          envHolder.position.lerp(g, Math.min(1, dt * 15));
+          envHolder.scale.setScalar(Math.max(.001, envS * (1 - k)));
+          envGroup.rotation.y += dt * 10; envGroup.rotation.z += dt * 7;
+          if (env.t >= 1) { envHolder.visible = false; env.state = 'hidden'; }
+          break;
+        }
+        case 'rejected': {
+          env.t += dt / .7; const t = Math.min(1, env.t);
+          if (t < .38) { const k = easeOutCubic(t / .38); envHolder.position.lerpVectors(env.from, env.mid, k); }
+          else { const k = easeOutCubic((t - .38) / .62); envHolder.position.lerpVectors(env.mid, BASE, k); }
+          envGroup.rotation.z = Math.sin(t * 42) * .14 * (1 - t);
+          envGroup.rotation.y = env.flip * Math.PI;
+          if (t >= 1) env.state = 'idle';
+          break;
+        }
+        case 'escape': {
+          env.t += dt / .7; const t = Math.min(1, env.t);
+          envHolder.position.z += dt * 44; envHolder.position.y += dt * 7;
+          envHolder.scale.setScalar(Math.max(.001, envS * (1 - t)));
+          envGroup.rotation.y += dt * 9; envGroup.rotation.z += dt * 5;
+          if (t >= 1) { envHolder.visible = false; env.state = 'hidden'; }
+          break;
+        }
+      }
+      env.prevPos.copy(envHolder.position);
+    }
+
+    /* ================= input ================= */
+    const ndc = new THREE.Vector2(); const raycaster = new THREE.Raycaster();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const drag = { active: false };
+    let px = 0, py = 0, parX = 0, parY = 0, shakeT = 0;
+    const canvasEl = renderer.domElement;
+
+    function worldToScreen(v) {
+      const p = v.clone().project(camera);
+      return { x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight };
+    }
+
+    canvasEl.addEventListener('pointerdown', e => {
+      if (game.screen !== 'playing' || verdictOpen || env.locked || env.state !== 'idle') return;
+      const sp = worldToScreen(envHolder.position);
+      if (Math.hypot(px - sp.x, py - sp.y) < 140 * envS + 60) {
+        drag.active = true; env.state = 'drag'; env.flipTarget = 0; env.vel.set(0, 0, 0);
+        env.dragTarget.copy(envHolder.position);
+        try { canvasEl.setPointerCapture(e.pointerId) } catch (err) { }
+        SFX.grab();
+      }
+    });
+    window.addEventListener('pointermove', e => {
+      px = e.clientX; py = e.clientY;
+      ndc.set(px / innerWidth * 2 - 1, -(py / innerHeight) * 2 + 1);
+      if (drag.active && env.state === 'drag') {
+        raycaster.setFromCamera(ndc, camera);
+        const p = new THREE.Vector3();
+        if (raycaster.ray.intersectPlane(dragPlane, p)) {
+          p.x = clamp(p.x, -(gateX + .35), gateX + .35); p.y = clamp(p.y, -1.9, 2.3); p.z = 0;
+          env.dragTarget.copy(p);
+        }
+      } else if (game.screen === 'playing' && !verdictOpen && env.state === 'idle' && !env.locked) {
+        const sp = worldToScreen(envHolder.position);
+        canvasEl.style.cursor = Math.hypot(px - sp.x, py - sp.y) < 140 * envS + 60 ? 'grab' : 'default';
+      }
+    });
+    function releaseDecision() {
+      if (env.state !== 'drag') return;
+      const x = envHolder.position.x, vx = env.vel.x;
+      if (Math.abs(x) > gateX * .5) {
+        env.state = 'thrown'; env.tT = 0;
+        env.vel.set(Math.sign(x) * (7 + Math.min(6, Math.abs(vx))), clamp(env.vel.y * .3, -2, 2), 0); SFX.whoosh();
+      }
+      else if (Math.abs(vx) > 4) {
+        env.state = 'thrown'; env.tT = 0;
+        env.vel.set(Math.sign(vx) * 9, clamp(env.vel.y * .3, -2, 2), 0); SFX.whoosh();
+      }
+      else env.state = 'idle';
+    }
+    window.addEventListener('pointerup', () => { if (drag.active) { drag.active = false; releaseDecision(); } });
+    window.addEventListener('pointercancel', () => { if (drag.active) { drag.active = false; if (env.state === 'drag') env.state = 'idle'; } });
+
+    function triggerDecision(side) {
+      if (game.screen !== 'playing' || verdictOpen || env.locked) return;
+      if (env.state !== 'idle' && env.state !== 'drag') return;
+      env.locked = true; env.state = 'thrown'; env.tT = 0;
+      env.vel.set(side === 'report' ? 10 : -10, .6, 0);
+      SFX.whoosh();
+    }
+    window.addEventListener('keydown', e => {
+      if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      if (!$('#howto').hidden && e.key === 'Escape') { $('#howto').hidden = true; return; }
+      if (game.screen !== 'playing') return;
+      if (e.key === 'ArrowLeft') { triggerDecision('file'); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { triggerDecision('report'); e.preventDefault(); }
+      else if ((e.key === 'v' || e.key === 'V') && !e.repeat) { env.flipTarget = 1; $('#pnFrom').classList.add('verify'); }
+      else if (e.key === ' ' || e.key === 'Enter') { if (verdictOpen) { continueVerdict(); e.preventDefault(); } }
+    });
+    window.addEventListener('keyup', e => {
+      if (e.key === 'v' || e.key === 'V') { env.flipTarget = 0; $('#pnFrom').classList.remove('verify'); }
+    });
+
+    /* ================= game flow ================= */
+    let shift = null, verdictOpen = false, GEN = 0, shownScore = 0;
+
+    function setScreen(name) {
+      game.screen = name;
+      $('#authScreen').hidden = name !== 'auth';
+      $('#menuScreen').hidden = name !== 'menu';
+      $('#endScreen').hidden = name !== 'end';
+      const playing = name === 'playing';
+      $('#hud').hidden = !playing; $('#emailPanel').hidden = !playing;
+      $('#btnFile').hidden = !playing; $('#btnReport').hidden = !playing;
+      $('#dragHint').hidden = !playing || store.get('hinted', false);
+      $('#verdict').hidden = true; verdictOpen = false;
+      document.body.classList.toggle('dim-gates', !playing);
+      applyLayout();
+    }
+
+    function buildShift(diffKey) {
+      const pool = EMAILS.filter(e => DIFFS[diffKey].tiers.includes(e.t));
+      const phish = shuffle(pool.filter(e => e.phish)).slice(0, 6);
+      const safe = shuffle(pool.filter(e => !e.phish)).slice(0, 6);
+      return shuffle([...phish, ...safe]);
+    }
+
+    function startShift() {
+      SFX.init();
+      shift = { gen: ++GEN, emails: buildShift(game.diff), idx: 0, score: 0, streak: 0, breaches: 0, correct: 0, decisions: [], diff: game.diff };
+      shownScore = 0; $('#hudScore').textContent = '0';
+      setScreen('playing'); updateHUD();
+      spawnEmail(0);
+    }
+
+    function spawnEmail(i) {
+      shift.idx = i;
+      const em = shift.emails[i]; env.current = em;
+      drawPostmark(em.addr); renderPanel(em);
+      resetEnv();
+      env.state = 'flyin'; env.t = 0; env.locked = false;
+      env.from.set((Math.random() * 2 - 1) * 3, BASE.y + 3.5, -26);
+      env.timer = env.timerMax = DIFFS[shift.diff].time + (2 - em.t);
+      updateHUD(); SFX.whoosh();
+    }
+
+    function commitDecision(side) {
+      if (game.screen !== 'playing' || verdictOpen) return;
+      if (['captured', 'rejected', 'escape', 'hidden', 'flyin'].includes(env.state)) return;
+      const em = env.current; if (!em) return;
+      env.locked = true;
+      const truth = em.phish ? 'report' : 'file';
+      const correct = side === truth;
+      shift.decisions.push({ em, call: side, correct });
+      const gen = shift.gen;
+      if (correct) {
+        env.state = 'captured'; env.t = 0; env.captureSide = side;
+        const g = side === 'report' ? gates.phish : gates.safe; g.pop = 1;
+        burst(g.group.position, g.color);
+        SFX.capture();
+        const newStreak = shift.streak + 1;
+        const mult = Math.min(2, 1 + (newStreak - 1) * .1);
+        const pts = Math.round((100 + Math.round(Math.max(0, env.timer) * 8)) * mult * DIFFS[shift.diff].mult);
+        shift.score += pts; shift.streak = newStreak; shift.correct++;
+        scorePopup(side, pts, mult);
+        if (!store.get('hinted', false)) { store.set('hinted', true); $('#dragHint').hidden = true; }
+        setTimeout(() => {
+          if (shift && shift.gen === gen && game.screen === 'playing') {
+            SFX.correct();
+            showVerdict({
+              ok: true, title: side === 'report' ? 'Correctly reported — that was phishing' : 'Correctly filed — that was legitimate',
+              sub: `${em.name} · <${em.addr}>`, chips: em.why, pts: `+${pts} PTS${mult > 1 ? ' · ×' + mult.toFixed(1) : ''}`
+            });
+          }
+        }, 430);
+      } else {
+        env.state = 'rejected'; env.t = 0;
+        env.from.copy(envHolder.position);
+        env.mid.set(Math.sign(side === 'report' ? 1 : -1) * gateX * .55, BASE.y, BASE.z);
+        shift.breaches++; shift.streak = 0;
+        flashRed(); shakeT = .5; SFX.wrong();
+        setTimeout(() => {
+          if (shift && shift.gen === gen && game.screen === 'playing') {
+            showVerdict({
+              ok: false, title: side === 'report' ? 'Wrong — that one was legitimate' : 'Wrong — that was phishing',
+              sub: `${em.name} · <${em.addr}>`, chips: em.why, pts: 'BREACH RECORDED'
+            });
+          }
+        }, 650);
+      }
+      updateHUD();
+    }
+
+    function missIntercept() {
+      if (env.locked || game.screen !== 'playing' || verdictOpen) return;
+      env.locked = true; env.state = 'escape'; env.t = 0;
+      const gen = shift.gen, em = env.current;
+      shift.breaches++; shift.streak = 0; shift.decisions.push({ em, call: 'miss', correct: false });
+      flashRed(); SFX.miss(); updateHUD();
+      setTimeout(() => {
+        if (shift && shift.gen === gen && game.screen === 'playing') {
+          showVerdict({
+            ok: false, title: 'Missed — the clock ran out',
+            sub: `${em.name} · <${em.addr}>`, chips: em.why, pts: 'BREACH RECORDED'
+          });
+        }
+      }, 680);
+    }
+
+    function showVerdict(v) {
+      const box = $('#verdict');
+      box.hidden = false; box.className = v.ok ? 'ok' : 'bad';
+      $('#vdIcon').innerHTML = `<i data-lucide="${v.ok ? 'shield-check' : 'shield-alert'}"></i>`;
+      $('#vdTitle').textContent = v.title;
+      $('#vdSub').textContent = v.sub;
+      $('#vdPts').textContent = v.pts;
+      const ch = $('#vdChips'); ch.innerHTML = '';
+      v.chips.slice(0, 4).forEach(c => { const d = document.createElement('div'); d.className = 'chip'; d.textContent = c; ch.appendChild(d) });
+      icons(); verdictOpen = true;
+      $('#vdContinue').focus({ preventScroll: true });
+    }
+    function continueVerdict() {
+      if (!verdictOpen) return;
+      verdictOpen = false; $('#verdict').hidden = true;
+      const next = shift.idx + 1, gen = shift.gen;
+      if (next >= shift.emails.length || shift.breaches >= 3) { endShift(false); return; }
+      setTimeout(() => { if (shift && shift.gen === gen && game.screen === 'playing') spawnEmail(next); }, 240);
+    }
+    $('#vdContinue').addEventListener('click', continueVerdict);
+
+    function endShift(early) {
+      if (!shift) return;
+      if (early && shift.decisions.length === 0) { setScreen('menu'); renderMenu(); return; }
+      const total = shift.decisions.length, correct = shift.correct;
+      const acc = total ? correct / total : 0;
+      let bestStreak = 0, run = 0;
+      shift.decisions.forEach(d => { run = d.correct ? run + 1 : 0; bestStreak = Math.max(bestStreak, run) });
+      let grade = 'D';
+      if (shift.breaches === 0 && acc >= .95) grade = 'S'; else if (acc >= .85) grade = 'A'; else if (acc >= .7) grade = 'B'; else if (acc >= .5) grade = 'C';
+      // persist stats
+      const s = currentUser ? currentUser.stats : defStats();
+      const gain = Math.round(shift.score / 8);
+      s.shifts++; s.total += total; s.correct += correct;
+      s.best = Math.max(s.best, shift.score);
+      s.bestAcc = Math.max(s.bestAcc, Math.round(acc * 100));
+      s.bestStreak = Math.max(s.bestStreak, bestStreak);
+      s.xp += gain;
+      if (currentUser) { currentUser.stats = s; persistStats(); }
+      // render
+      $('#endKind').textContent = (shift.breaches >= 3) ? 'SHIFT TERMINATED — THREE BREACHES' : (early ? 'SHIFT ENDED EARLY' : 'SHIFT COMPLETE');
+      const gEl = $('#endGrade'); gEl.textContent = grade; gEl.className = 'grade-' + grade;
+      $('#endScore').textContent = shift.score;
+      $('#endAcc').textContent = total ? Math.round(acc * 100) + '%' : '—';
+      $('#endCor').textContent = correct + ' / ' + total;
+      $('#endStk').textContent = '×' + bestStreak;
+      $('#endBrk').textContent = shift.breaches;
+      const lvl = 1 + Math.floor(s.xp / 400);
+      $('#endLvl').textContent = lvl;
+      $('#endXp').textContent = '+' + gain + ' XP';
+      const rows = $('#endRows'); rows.innerHTML = '';
+      shift.decisions.forEach(d => {
+        const r = document.createElement('div'); r.className = 'rev-row';
+        const ic = d.call === 'miss' ? 'minus' : (d.correct ? 'check' : 'x');
+        r.innerHTML = `<span class="rev-ic ${d.correct ? 'ok' : 'bad'}"><i data-lucide="${ic}"></i></span>
+      <span class="rev-truth ${d.em.phish ? 'P' : 'L'}">${d.em.phish ? 'PHISH' : 'LEGIT'}</span>
+      <span class="rev-addr">${d.em.addr}</span>
+      <span class="rev-call">your call: ${d.call === 'miss' ? '—' : d.call.toUpperCase()}</span>`;
+        rows.appendChild(r);
+      });
+      icons();
+      env.state = 'ambient'; resetEnv(); env.locked = false;
+      setScreen('end');
+      $('#xpFill').style.width = '0%';
+      setTimeout(() => { $('#xpFill').style.width = ((s.xp % 400) / 400 * 100) + '%' }, 350);
+      if (grade === 'S' || grade === 'A') SFX.correct();
+      shift = null;
+    }
+
+    /* ================= HUD & panel ================= */
+    function updateHUD() {
+      if (!shift) return;
+      $('#hudShift').textContent = `MAIL ${String(shift.idx + 1).padStart(2, '0')}/${String(shift.emails.length).padStart(2, '0')}`;
+      const mult = Math.min(2, 1 + shift.streak * .1);
+      $('#hudStreak').textContent = `STREAK ×${mult.toFixed(1)}`;
+      const lv = $('#hudLives'); lv.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const s = document.createElement('span');
+        if (i < shift.breaches) s.className = 'lost';
+        s.innerHTML = '<i data-lucide="shield"></i>'; lv.appendChild(s);
+      }
+      icons();
+    }
+    function renderPanel(em) {
+      $('#pnTier').textContent = 'TIER ' + ['I', 'II', 'III'][em.t - 1];
+      $('#pnTimer').textContent = '';
+      $('#pnName').textContent = em.name;
+      $('#pnAddr').textContent = em.addr;
+      $('#pnSub').textContent = em.sub;
+      const body = $('#pnBody'); body.innerHTML = '';
+      em.body.forEach(p => { const d = document.createElement('p'); d.textContent = p; body.appendChild(d) });
+      if (em.link) {
+        const b = document.createElement('button'); b.className = 'lnk';
+        b.innerHTML = `<i data-lucide="external-link"></i><span>${em.link.text}</span>`;
+        b.addEventListener('mouseenter', e => showTip(e, em.link.href));
+        b.addEventListener('focus', e => showTip(e, em.link.href));
+        b.addEventListener('mousemove', e => moveTip(e));
+        b.addEventListener('mouseleave', hideTip);
+        b.addEventListener('blur', hideTip);
+        b.addEventListener('mouseenter', () => { env.hoverTiltT = .14 });
+        b.addEventListener('mouseleave', () => { env.hoverTiltT = 0 });
+        body.appendChild(b);
+      }
+      if (em.att) {
+        const a = document.createElement('div'); a.className = 'att';
+        a.innerHTML = `<i data-lucide="paperclip"></i><span>${em.att.name} · ${em.att.size}</span>`;
+        a.addEventListener('mouseenter', e => showTip(e, 'attachments from unverified senders can execute malware'));
+        a.addEventListener('mouseleave', hideTip);
+        body.appendChild(a);
+      }
+      icons();
+    }
+    const tip = $('#tip');
+    function showTip(e, text) { tip.textContent = text; tip.style.display = 'block'; moveTip(e); }
+    function moveTip(e) {
+      tip.style.left = Math.min(innerWidth - 336, e.clientX + 14) + 'px';
+      tip.style.top = Math.min(innerHeight - 70, e.clientY + 18) + 'px';
+    }
+    function hideTip() { tip.style.display = 'none'; }
+
+    /* hold-to-verify → flip the envelope */
+    {
+      let t = null; const row = $('#pnFrom');
+      const on = () => { t = setTimeout(() => { env.flipTarget = 1; row.classList.add('verify') }, 220) };
+      const off = () => { clearTimeout(t); env.flipTarget = 0; row.classList.remove('verify') };
+      row.addEventListener('pointerdown', on);
+      row.addEventListener('pointerup', off);
+      row.addEventListener('pointerleave', off);
+      row.addEventListener('pointercancel', off);
+    }
+
+    /* score popup */
+    function scorePopup(side, pts, mult) {
+      const g = (side === 'report' ? gates.phish : gates.safe).group.position;
+      const sp = worldToScreen(g);
+      const d = document.createElement('div'); d.className = 'pop';
+      d.style.left = sp.x + 'px'; d.style.top = sp.y + 'px';
+      d.style.color = side === 'report' ? 'var(--danger)' : 'var(--safe)';
+      d.innerHTML = `+${pts}${mult > 1 ? `<span class="m">×${mult.toFixed(1)}</span>` : ''}`;
+      $('#popLayer').appendChild(d);
+      setTimeout(() => d.remove(), 950);
+    }
+    function flashRed() { const f = $('#flash'); f.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on'))); }
+    function toast(msg) {
+      const t = $('#toast'); t.innerHTML = `<i data-lucide="fish"></i><span>${msg}</span>`; icons();
+      t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2200);
+    }
+    function setMuteIcons() {
+      const ic = game.muted ? 'volume-x' : 'volume-2';
+      $('#hudMute').innerHTML = `<i data-lucide="${ic}"></i>`;
+      $('#menuMute').innerHTML = `<i data-lucide="${ic}"></i>SOUND ${game.muted ? 'OFF' : 'ON'}`;
+      icons();
+    }
+    function toggleMute() { game.muted = !game.muted; store.set(MUTEK, game.muted); setMuteIcons(); }
+    $('#hudMute').addEventListener('click', toggleMute);
+    $('#menuMute').addEventListener('click', toggleMute);
+
+    /* buttons */
+    $('#btnFile').addEventListener('click', () => triggerDecision('file'));
+    $('#btnReport').addEventListener('click', () => triggerDecision('report'));
+    $('#hudQuit').addEventListener('click', () => endShift(true));
+    $('#btnStart').addEventListener('click', startShift);
+    $('#btnAgain').addEventListener('click', startShift);
+    $('#btnMenu').addEventListener('click', () => { setScreen('menu'); renderMenu() });
+    $('#btnHowto').addEventListener('click', () => { $('#howto').hidden = false; icons() });
+    $('#howtoClose').addEventListener('click', () => { $('#howto').hidden = true });
+
+    /* difficulty */
+    $('#diffSeg').addEventListener('click', e => {
+      const b = e.target.closest('button[data-diff]'); if (!b) return;
+      game.diff = b.dataset.diff; store.set(DIFFK, game.diff); SFX.ui();
+      document.querySelectorAll('#diffSeg button').forEach(x => x.classList.toggle('on', x === b));
+    });
+
+    /* ================= auth UI ================= */
+    let authMode = 'signin';
+    function setAuthMode(m) {
+      authMode = m;
+      $('#tabSignin').classList.toggle('on', m === 'signin');
+      $('#tabSignup').classList.toggle('on', m === 'signup');
+      $('#pass2Row').hidden = m === 'signin';
+      $('#authSubmitLabel').textContent = m === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+      $('#authErr').textContent = '';
+    }
+    $('#tabSignin').addEventListener('click', () => setAuthMode('signin'));
+    $('#tabSignup').addEventListener('click', () => setAuthMode('signup'));
+
+    async function doAuth() {
+      SFX.init();
+      const name = $('#aName').value.trim(), pw = $('#aPass').value;
+      const err = $('#authErr');
+      const fail = m => { err.textContent = m };
+      if (!/^[a-zA-Z0-9_]{3,16}$/.test(name)) return fail('Callsign: 3–16 characters, letters / digits / underscore.');
+      if (pw.length < 4) return fail('Passphrase must be at least 4 characters.');
+      const users = loadUsers();
+      const label = $('#authSubmitLabel');
+      if (authMode === 'signin') {
+        if (!users[name] || name === '__guest') return fail('No record for that callsign on this device.');
+        const h = await hash(pw);
+        if (users[name].h !== h) return fail('Passphrase does not match.');
+        currentUser = { name, stats: users[name].stats || defStats(), guest: false };
+        store.set(SESSION, name);
+      } else {
+        if (users[name]) return fail('That callsign is already registered here.');
+        const p2 = $('#aPass2').value;
+        if (p2 !== pw) return fail('Confirmation passphrase does not match.');
+        label.textContent = 'CREATING…';
+        await new Promise(r => setTimeout(r, 150));
+        ensureRecord(name, await hash(pw));
+        currentUser = { name, stats: defStats(), guest: false };
+        store.set(SESSION, name);
+      }
+      label.textContent = authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+      toast(authMode === 'signin' ? `Signed in — ${name}` : `Account created — ${name}`);
+      setScreen('menu'); renderMenu();
+    }
+    $('#authSubmit').addEventListener('click', doAuth);
+    $('#aPass').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth() });
+    $('#aPass2').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth() });
+    $('#authGuest').addEventListener('click', () => {
+      SFX.init();
+      const rec = ensureRecord('__guest', null);
+      currentUser = { name: 'guest', stats: rec.stats, guest: true };
+      store.set(SESSION, '__guest');
+      toast('Continuing as guest');
+      setScreen('menu'); renderMenu();
+    });
+    $('#btnSignout').addEventListener('click', () => {
+      store.del(SESSION); currentUser = null;
+      $('#aName').value = ''; $('#aPass').value = ''; $('#aPass2').value = '';
+      setAuthMode('signin'); setScreen('auth');
+    });
+
+    /* ================= menu render ================= */
+    function renderMenu() {
+      if (!currentUser) return;
+      $('#menuUser').textContent = currentUser.guest ? 'GUEST' : currentUser.name.toUpperCase();
+      const s = currentUser.stats;
+      $('#st1').textContent = s.shifts;
+      $('#st2').textContent = s.best;
+      $('#st3').textContent = s.total ? Math.round(100 * s.correct / s.total) + '%' : '—';
+      $('#st4').textContent = s.bestStreak;
+      $('#st5').textContent = 'L' + (1 + Math.floor(s.xp / 400));
+      const reg = Object.entries(loadUsers())
+        .map(([n, r]) => ({
+          name: n === '__guest' ? 'guest' : n, best: (r.stats && r.stats.best) || 0,
+          acc: (r.stats && r.stats.total) ? Math.round(100 * r.stats.correct / r.stats.total) : 0,
+          me: (currentUser.guest && n === '__guest') || n === currentUser.name
+        }))
+        .sort((a, b) => b.best - a.best).slice(0, 5);
+      const box = $('#menuRegistry'); box.innerHTML = '';
+      if (!reg.length) { box.innerHTML = '<div class="reg-row"><span>no records yet — run a shift</span><span class="sc">—</span></div>'; return; }
+      reg.forEach(r => {
+        const d = document.createElement('div'); d.className = 'reg-row';
+        d.innerHTML = `<span class="${r.me ? 'me' : ''}">${r.name}</span><span>${r.acc}% acc</span><span class="sc">${r.best}</span>`;
+        box.appendChild(d);
+      });
+    }
+
+    /* ================= main loop ================= */
+    const gateLblSafe = $('#lblSafe'), gateLblPhish = $('#lblPhish');
+    let last = performance.now();
+    function tick(now) {
+      requestAnimationFrame(tick);
+      const dt = Math.min(.05, (now - last) / 1000); last = now;
+      const time = now / 1000;
+      // floor & dust
+      floorRings.forEach((r, i) => r.rotation.y += dt * ringSpeeds[i]);
+      for (let i = 0; i < dustSpeed.length; i++) {
+        dustPos[i * 3 + 1] += dt * dustSpeed[i];
+        if (dustPos[i * 3 + 1] > 6) dustPos[i * 3 + 1] = -2.5;
+      }
+      dust.geometry.attributes.position.needsUpdate = true;
+      // gates
+      [gates.safe, gates.phish].forEach(g => {
+        g.pop = Math.max(0, g.pop - dt * 2.2);
+        g.ring.rotation.z += dt * (.25 + g.pop * 2);
+        g.disc.material.opacity = .05 + g.pop * .35;
+        g.group.scale.setScalar(g.group.scale.x * (1) + g.pop * .02); // gentle pop (kept small)
+      });
+      // envelope
+      updateEnv(dt, time);
+      // timer
+      const timing = game.screen === 'playing' && !verdictOpen && !env.locked && (env.state === 'idle' || env.state === 'drag');
+      if (timing && shift) {
+        env.timer -= dt;
+        const p = Math.max(0, env.timer / env.timerMax);
+        ringProgress(p); timerRing.visible = true;
+        const tEl = $('#pnTimer'); tEl.textContent = env.timer.toFixed(1);
+        tEl.style.color = p > .5 ? 'var(--paper)' : p > .25 ? 'var(--amber)' : 'var(--danger)';
+        if (env.timer <= 0) missIntercept();
+      } else {
+        timerRing.visible = timing;
+        if (!timing) $('#pnTimer').textContent = '';
+      }
+      // bursts
+      for (let i = bursts.length - 1; i >= 0; i--) {
+        const b = bursts[i]; b.life -= dt;
+        const pos = b.p.geometry.attributes.position;
+        for (let j = 0; j < b.vel.length; j++) {
+          pos.array[j * 3] += b.vel[j].x * dt; pos.array[j * 3 + 1] += b.vel[j].y * dt; pos.array[j * 3 + 2] += b.vel[j].z * dt;
+          b.vel[j].y -= 2.4 * dt; b.vel[j].multiplyScalar(1 - 1.6 * dt);
+        }
+        pos.needsUpdate = true;
+        b.p.material.opacity = Math.max(0, b.life / b.max) * .95;
+        if (b.life <= 0) { scene.remove(b.p); b.p.geometry.dispose(); b.p.material.dispose(); bursts.splice(i, 1); }
+      }
+      // shadow
+      shadow.position.x = clamp(envHolder.position.x, -8, 8);
+      shadow.material.opacity = envHolder.visible ? (env.state === 'captured' || env.state === 'escape' ? .08 : .3 * envHolder.scale.x / envS) : 0;
+      // camera parallax + shake
+      parX = lerp(parX, ndc.x * .4, 1 - Math.pow(.005, dt));
+      parY = lerp(parY, ndc.y * -.22, 1 - Math.pow(.005, dt));
+      camera.position.set(camShift + parX, 1.5 + parY * .5, 11);
+      if (shakeT > 0) {
+        shakeT -= dt;
+        camera.position.x += (Math.random() - .5) * shakeT * .55;
+        camera.position.y += (Math.random() - .5) * shakeT * .55;
+      }
+      camera.lookAt(camShift + parX * .6, .3 + parY * .4, 0);
+      // score ticker
+      if (shift) {
+        shownScore += (shift.score - shownScore) * Math.min(1, dt * 7);
+        if (Math.abs(shift.score - shownScore) < .5) shownScore = shift.score;
+        $('#hudScore').textContent = Math.round(shownScore);
+      }
+      // gate labels
+      [[gates.safe, gateLblSafe], [gates.phish, gateLblPhish]].forEach(([g, el]) => {
+        const v = g.group.position.clone().project(camera);
+        el.style.left = ((v.x * .5 + .5) * innerWidth) + 'px';
+        el.style.top = ((-v.y * .5 + .5) * innerHeight) + 'px';
+      });
+      renderer.render(scene, camera);
+    }
+
+    /* ================= boot ================= */
+    function boot() {
+      const sess = store.get(SESSION, null);
+      if (sess) {
+        const users = loadUsers();
+        if (users[sess]) {
+          currentUser = { name: sess === '__guest' ? 'guest' : sess, stats: users[sess].stats || defStats(), guest: sess === '__guest' };
+          setScreen('menu'); renderMenu(); return;
+        }
+      }
+      setScreen('auth');
+    }
+    drawPostmark('triage@phishnet.post');
+    env.state = 'ambient'; resetEnv();
+    applyLayout();
+    icons(); setMuteIcons();
+    document.fonts && document.fonts.ready.then(() => {
+      drawPostmark(env.current ? env.current.addr : 'triage@phishnet.post');
+    });
+    boot();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+
+</html>

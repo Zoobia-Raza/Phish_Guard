@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Escape the Phisher</title>
+    <style>
+        :root {
+            --ink: #10254a;
+            --blue: #2f7df6;
+            --cyan: #55d8ff;
+            --purple: #7757e8;
+            --white: #fff;
+            --danger: #ff625d;
+            --safe: #2cb787;
+            --gold: #ffd66b
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Inter, ui-rounded, system-ui, Segoe UI, sans-serif;
+            background: #091735;
+            color: var(--ink);
+            touch-action: none
+        }
+
+        button {
+            border: 0;
+            border-radius: 14px;
+            padding: 13px 20px;
+            font-weight: 900;
+            cursor: pointer;
+            color: #10254a;
+            background: white;
+            box-shadow: 0 7px 18px #09173533;
+            transition: transform .12s, filter .12s
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.03)
+        }
+
+        button:active {
+            transform: translateY(1px) scale(.98)
+        }
+
+        .hidden {
+            display: none !important
+        }
+
+        #app {
+            height: 100%;
+            position: relative;
+            background: linear-gradient(#58cfff, #b9eaff 56%, #795fe8 56%, #4c3db1);
+            isolation: isolate
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%
+        }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 7;
+            background: #0a173533
+        }
+
+        .card {
+            width: min(590px, 92vw);
+            padding: 32px;
+            border-radius: 28px;
+            background: #fffffff2;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 30px 80px #09173566;
+            text-align: center;
+            border: 1px solid #ffffffaa
+        }
+
+        h1 {
+            font-size: clamp(38px, 7vw, 72px);
+            margin: 0 0 8px;
+            letter-spacing: -3px;
+            color: #173a79;
+            line-height: .95
+        }
+
+        h2 {
+            margin: 4px 0 16px;
+            font-size: 32px
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #45618c;
+            margin-bottom: 24px
+        }
+
+        .menuBtns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap
+        }
+
+        .primary {
+            background: linear-gradient(135deg, #2f7df6, #7757e8);
+            color: #fff
+        }
+
+        .dangerBtn {
+            background: #fff0ee;
+            color: #b9342f
+        }
+
+        .safeBtn {
+            background: #eafbf5;
+            color: #12664a
+        }
+
+        #hud {
+            position: absolute;
+            z-index: 4;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none
+        }
+
+        .hudbox {
+            background: #ffffffdf;
+            border: 1px solid #fff;
+            border-radius: 16px;
+            padding: 9px 13px;
+            box-shadow: 0 8px 25px #173a7930;
+            font-weight: 900;
+            white-space: nowrap
+        }
+
+        #progress {
+            flex: 1;
+            height: 12px;
+            background: #ffffffaa;
+            border-radius: 99px;
+            overflow: hidden;
+            min-width: 80px
+        }
+
+        .bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #55d8ff, #7757e8);
+            transition: .15s
+        }
+
+        #inventory {
+            position: absolute;
+            z-index: 4;
+            top: 68px;
+            left: 14px;
+            display: flex;
+            gap: 7px;
+            pointer-events: none
+        }
+
+        .inv {
+            background: #ffffffd9;
+            border: 1px solid #fff;
+            padding: 7px 10px;
+            border-radius: 13px;
+            font-weight: 900;
+            font-size: 13px;
+            box-shadow: 0 6px 18px #173a7922
+        }
+
+        #controls {
+            position: absolute;
+            z-index: 4;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none
+        }
+
+        .pad {
+            display: flex;
+            gap: 8px;
+            pointer-events: auto
+        }
+
+        .pad button {
+            width: 56px;
+            height: 50px;
+            padding: 0;
+            font-size: 20px;
+            opacity: .94;
+            user-select: none;
+            -webkit-user-select: none
+        }
+
+        #inspectPanel {
+            position: absolute;
+            z-index: 10;
+            left: 50%;
+            bottom: 70px;
+            transform: translateX(-50%);
+            width: min(680px, 94vw);
+            background: #fffffff8;
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: 0 25px 70px #09173577;
+            border: 1px solid #fff
+        }
+
+        .inspectGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .tag {
+            background: #edf5ff;
+            border-radius: 12px;
+            padding: 10px;
+            min-width: 0;
+            overflow-wrap: anywhere
+        }
+
+        .warn {
+            color: #d74b44;
+            font-weight: 900
+        }
+
+        .safe {
+            color: #16815a;
+            font-weight: 900
+        }
+
+        .clue {
+            background: #fff7da;
+            border: 1px solid #ffe59b;
+            border-radius: 12px;
+            padding: 10px;
+            margin: 12px 0;
+            text-align: left
+        }
+
+        .small {
+            font-size: 13px;
+            color: #617595
+        }
+
+        .tips {
+            text-align: left;
+            line-height: 1.75
+        }
+
+        .tips b {
+            color: #173a79
+        }
+
+        .statline {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e8eef7
+        }
+
+        .kbd {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 7px;
+            background: #e7eef9;
+            border-bottom: 2px solid #b9c9dd;
+            font-weight: 900;
+            font-size: 12px
+        }
+
+        #toast {
+            position: absolute;
+            z-index: 13;
+            top: 82px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: #10254a;
+            color: #fff;
+            padding: 11px 16px;
+            border-radius: 14px;
+            opacity: 0;
+            transition: .22s;
+            pointer-events: none;
+            max-width: min(650px, 90vw);
+            text-align: center;
+            box-shadow: 0 10px 30px #09173544
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0)
+        }
+
+        #prompt {
+            position: absolute;
+            z-index: 5;
+            left: 50%;
+            bottom: 88px;
+            transform: translateX(-50%);
+            background: #ffffffee;
+            border-radius: 14px;
+            padding: 9px 14px;
+            font-weight: 900;
+            box-shadow: 0 8px 28px #09173544;
+            pointer-events: none
+        }
+
+        #levelIntro {
+            position: absolute;
+            z-index: 6;
+            left: 50%;
+            top: 22%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            text-shadow: 0 4px 20px #0a1735;
+            pointer-events: none;
+            animation: intro 2.2s forwards
+        }
+
+        #levelIntro b {
+            display: block;
+            font-size: clamp(30px, 5vw, 58px);
+            letter-spacing: -2px
+        }
+
+        #levelIntro span {
+            font-size: 16px;
+            font-weight: 800
+        }
+
+        @keyframes intro {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -12px)
+            }
+
+            15%,
+            70% {
+                opacity: 1;
+                transform: translate(-50%, 0)
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, 10px)
+            }
+        }
+
+        @media(max-width:720px) {
+            #hud {
+                gap: 6px;
+                left: 8px;
+                right: 8px;
+                top: 8px
+            }
+
+            .hudbox {
+                padding: 7px 9px;
+                font-size: 12px
+            }
+
+            #inventory {
+                top: 52px;
+                left: 8px
+            }
+
+            .inv {
+                font-size: 11px;
+                padding: 5px 7px
+            }
+
+            #controls {
+                left: 8px;
+                right: 8px;
+                bottom: 8px
+            }
+
+            .pad button {
+                width: 50px;
+                height: 46px
+            }
+
+            .card {
+                padding: 24px
+            }
+
+            .inspectGrid {
+                grid-template-columns: 1fr
+            }
+
+            #inspectPanel {
+                bottom: 65px;
+                padding: 16px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <canvas id="game"></canvas>
+        <div id="hud" class="hidden">
+            <div class="hudbox" id="levelName">LEVEL 1</div>
+            <div class="hudbox" id="hearts">🛡️ ♥ ♥ ♥</div>
+            <div class="hudbox">⭐ <span id="score">0</span></div>
+            <div id="progress">
+                <div class="bar" id="bar"></div>
+            </div><button id="mute" style="pointer-events:auto">🔊</button>
+        </div>
+        <div id="inventory" class="hidden">
+            <div class="inv" id="verifyInv">🔎 0</div>
+            <div class="inv" id="reportInv">🛡️ 0</div>
+            <div class="inv" id="mfaInv">🔐 0</div>
+            <div class="inv" id="sourceInv">📱 0</div>
+        </div>
+        <div id="controls" class="hidden">
+            <div class="pad"><button id="leftBtn">←</button><button id="rightBtn">→</button></div>
+            <div class="pad"><button id="jumpBtn">↥</button><button id="inspectBtn">E</button><button
+                    id="pauseBtn">Ⅱ</button></div>
+        </div>
+        <div id="prompt" class="hidden">Press <span class="kbd">E</span> to inspect</div>
+        <div id="toast"></div>
+        <div id="levelIntro" class="hidden"></div>
+        <div id="start" class="screen">
+            <div class="card">
+                <div style="font-size:48px">🛡️🎣</div>
+                <h1>ESCAPE THE PHISHER</h1>
+                <div class="subtitle">Can you make it to the Cyber Safe Zone?</div>
+                <div class="menuBtns"><button class="primary" id="play">▶ PLAY</button><button id="how">📖 HOW TO
+                        PLAY</button><button id="settings">⚙ SETTINGS</button></div>
+                <div class="small" style="margin-top:18px">A browser-based phishing awareness platformer</div>
+            </div>
+        </div>
+        <div id="howPanel" class="screen hidden">
+            <div class="card">
+                <h2>📖 HOW TO PLAY</h2>
+                <div class="tips"><b>RUN</b> — ← / → or A / D<br><b>JUMP</b> — Space<br><b>INSPECT</b> — E near a
+                    suspicious message<br><b>DECIDE</b> — Avoid phishing; continue past legitimate
+                    messages<br><b>COLLECT</b> — Grab security tools for protection<br><b>ESCAPE</b> — Reach the glowing
+                    Cyber Safe Zone</div>
+                <p class="small">You do not need to inspect everything. Observe first, inspect when unsure, then choose.
+                </p><button id="backHow">BACK</button>
+            </div>
+        </div>
+        <div id="settingsPanel" class="screen hidden">
+            <div class="card">
+                <h2>⚙ SETTINGS</h2>
+                <p>Sound: <b id="soundState">ON</b></p><button id="toggleSound">Toggle Sound</button><button
+                    id="backSettings" style="margin-left:8px">BACK</button>
+            </div>
+        </div>
+        <div id="pause" class="screen hidden">
+            <div class="card">
+                <h2>⏸ PAUSED</h2>
+                <p>Your progress is safe.</p><button class="primary" id="resume">RESUME</button><button
+                    id="restartPause">RESTART LEVEL</button><button id="menuPause">MAIN MENU</button>
+            </div>
+        </div>
+        <div id="inspectPanel" class="hidden">
+            <div class="small">MESSAGE INSPECTION</div>
+            <h2 id="inspectTitle" style="font-size:24px"></h2>
+            <div class="inspectGrid">
+                <div class="tag"><b>Sender</b><br><span id="inspectSender"></span></div>
+                <div class="tag"><b>Link / Object</b><br><span id="inspectLink"></span></div>
+            </div>
+            <div id="clueBox" class="clue hidden"><b>What stands out?</b>
+                <div id="inspectWarnings" style="margin-top:5px"></div>
+            </div>
+            <div class="menuBtns"><button id="avoid" class="primary">🛡️ Avoid</button><button id="continueMsg"
+                    class="safeBtn">✓ Continue</button><button id="further">🔎 Inspect Further</button><button
+                    id="reportNow" class="hidden">🛡️ Use REPORT</button><button id="sourceNow" class="hidden">📱 Call
+                    Source</button></div>
+        </div>
+        <div id="end" class="screen hidden">
+            <div class="card">
+                <div style="font-size:55px">🏆</div>
+                <h2 id="endTitle">LEVEL COMPLETE</h2>
+                <div id="stats"></div>
+                <div class="menuBtns" style="margin-top:18px"><button class="primary" id="next">NEXT
+                        LEVEL</button><button id="retry">REPLAY</button><button id="homeEnd">MAIN MENU</button></div>
+            </div>
+        </div>
+        <div id="caught" class="screen hidden">
+            <div class="card">
+                <div style="font-size:55px">🎣</div>
+                <h2>THE PHISHER CAUGHT YOU!</h2>
+                <p>Look for pressure, strange senders, unexpected links and requests for sign-in details.</p><button
+                    class="primary" id="tryAgain">TRY AGAIN</button><button id="homeCaught" style="margin-left:8px">MAIN
+                    MENU</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const $ = id => document.getElementById(id), canvas = $('game'), ctx = canvas.getContext('2d');
+        let W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+        function resize() { W = innerWidth; H = innerHeight; dpr = Math.min(2, devicePixelRatio || 1); canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0) } addEventListener('resize', resize); resize();
+        const LEVELS = [
+            { name: 'DIGITAL CITY', theme: 'city', teach: 'Recognize suspicious messages and fake links', length: 5600 },
+            { name: 'MESSAGE FOREST', theme: 'forest', teach: 'Watch for urgency and impersonation', length: 5900 },
+            { name: 'LOGIN LAB', theme: 'lab', teach: 'Check URLs before signing in', length: 6100 },
+            { name: 'DATA HIGHWAY', theme: 'highway', teach: 'Treat attachments and downloads carefully', length: 6400 },
+            { name: "PHISHER'S LAIR", theme: 'lair', teach: 'Use everything you learned', length: 6800 }
+        ];
+        const TRAPS = [
+            { kind: 'phish', title: 'URGENT ACCOUNT WARNING', sender: 'support@paypa1-security.com', link: 'paypa1-login.xyz', warnings: 'Strange look-alike domain • extreme urgency • asks you to sign in' },
+            { kind: 'safe', title: 'Teacher Shared a Document', sender: 'teacher@school.example', link: 'school.example/classwork', warnings: 'Expected sender • familiar school domain • no pressure' },
+            { kind: 'phish', title: 'YOU WON A PRIZE!', sender: 'winner@reward-fast.example', link: 'claim-prize-now.xyz', warnings: 'Unexpected prize • unfamiliar link • asks for personal details' },
+            { kind: 'phish', title: 'Delivery Problem', sender: 'delivery-alert@parcel-check.example', link: 'parcel-check-login.xyz', warnings: 'Unexpected request • urgency • sign-in page on an unfamiliar domain' },
+            { kind: 'safe', title: 'Class Reminder', sender: 'teacher@school.example', link: 'school.example/reminders', warnings: 'Familiar sender • expected message • normal school domain' },
+            { kind: 'phish', title: 'PASSWORD RESET REQUIRED', sender: 'security@micros0ft-help.example', link: 'micros0ft-reset.xyz', warnings: '“micros0ft” uses a zero • urgency • credential request' },
+            { kind: 'safe', title: 'Library Book Due Soon', sender: 'library@school.example', link: 'school.example/library', warnings: 'Known service • no password request • normal domain' },
+            { kind: 'phish', title: 'SCAN TO CLAIM FREE DATA', sender: 'Poster QR Code', link: 'q-rbonus-login.xyz', warnings: 'Unexpected reward • QR hides destination • unfamiliar sign-in domain' }
+        ];
+        let keys = {}, gameState = 'menu', level = 0, camX = 0, score = 0, hearts = 3, stats = {}, objects = [], platforms = [], particles = [], inspectTarget = null, muted = false, audioCtx = null, last = 0, startTime = 0, modal = false, phisherMood = 0;
+        const inventory = { verify: 0, report: 0, mfa: 0, source: 0 };
+        const player = { x: 160, y: 0, w: 36, h: 62, vx: 0, vy: 0, onGround: false, face: 1, anim: 0, celebrate: 0, invuln: 0 };
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden')); if (id) $(id).classList.remove('hidden') }
+        function toast(s) { const t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800) }
+        function beep(freq = 520, dur = .08, type = 'sine', gain = .035) { if (muted) return; try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = freq; o.type = type; g.gain.value = gain; o.connect(g); g.connect(audioCtx.destination); o.start(); g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + dur); o.stop(audioCtx.currentTime + dur) } catch (e) { } }
+        function baseY() { return H * .74 }
+        function rand(seed) { const x = Math.sin(seed * 999.91) * 43758.5453; return x - Math.floor(x) }
+        function resetStats() { stats = { threats: 0, safe: 0, mistakes: 0, items: 0, totalPhish: 0, totalSafe: 0 } }
+        function resetLevel() {
+            const L = LEVELS[level], base = baseY(); camX = 0; hearts = 3; resetStats(); objects = []; platforms = []; particles = []; inspectTarget = null; modal = false; phisherMood = 0; Object.keys(inventory).forEach(k => inventory[k] = 0);
+            platforms.push({ x: 0, y: base, w: L.length + 500, h: H - base + 100, ground: true });
+            let x = 650, i = 0;
+            while (x < L.length - 650) {
+                const gap = (i % 5 === 4) ? 90 : 0;
+                if (gap) { platforms[0].holes ??= []; platforms[0].holes.push({ x: x - 80, w: gap }); }
+                const data = TRAPS[(i + level * 2) % TRAPS.length];
+                const y = base - 54;
+                objects.push({ x, y, w: 176, h: 50, type: data.kind, data, active: true, inspected: false, resolved: false, passed: false, id: i });
+                if (data.kind === 'phish') stats.totalPhish++; else stats.totalSafe++;
+                if (i % 3 === 1) objects.push({ x: x + 235, y: base - 48, w: 44, h: 44, type: 'power', power: ['verify', 'report', 'mfa', 'source'][(i + level) % 4], active: true, id: 100 + i });
+                if (i % 2 === 0) platforms.push({ x: x + 90, y: base - 125 - (i % 3) * 36, w: 185, h: 18, ground: false });
+                x += 430 + (i % 3) * 80; i++;
+            }
+            objects.push({ x: L.length - 330, y: base - 128, w: 250, h: 128, type: 'safezone', active: true });
+            player.x = 170; player.y = base - player.h; player.vx = 0; player.vy = 0; player.onGround = true; player.celebrate = 0; player.invuln = 0;
+            $('levelName').textContent = `LEVEL ${level + 1} — ${L.name}`; updateHud();
+            const intro = $('levelIntro'); intro.innerHTML = `<b>${L.name}</b><span>${L.teach}</span>`; intro.classList.remove('hidden'); intro.style.animation = 'none'; void intro.offsetWidth; intro.style.animation = 'intro 2.2s forwards'; setTimeout(() => intro.classList.add('hidden'), 2300);
+            startTime = performance.now();
+        }
+        function startGame() { level = 0; score = 0; resetLevel(); gameState = 'playing'; showScreen(null); $('hud').classList.remove('hidden'); $('inventory').classList.remove('hidden'); $('controls').classList.remove('hidden'); last = performance.now(); requestAnimationFrame(loop) }
+        function showMenu() { gameState = 'menu'; modal = false; $('hud').classList.add('hidden'); $('inventory').classList.add('hidden'); $('controls').classList.add('hidden'); $('inspectPanel').classList.add('hidden'); $('prompt').classList.add('hidden'); showScreen('start') }
+        function updateHud() {
+            $('hearts').textContent = '🛡️ ' + '♥ '.repeat(hearts).trim() + (hearts < 3 ? ' ' + '♡ '.repeat(3 - hearts).trim() : ''); $('score').textContent = score; $('bar').style.width = Math.min(100, (player.x / LEVELS[level].length) * 100) + '%';
+            $('verifyInv').textContent = `🔎 ${inventory.verify}`; $('reportInv').textContent = `🛡️ ${inventory.report}`; $('mfaInv').textContent = `🔐 ${inventory.mfa}`; $('sourceInv').textContent = `📱 ${inventory.source}`;
+        }
+        function inputLeft() { return keys.ArrowLeft || keys.a || keys.A } function inputRight() { return keys.ArrowRight || keys.d || keys.D }
+        function jump() { if (gameState !== 'playing' || modal) return; if (player.onGround) { player.vy = -620; player.onGround = false; beep(650, .09) } }
+        function rectHit(a, b) { return a.x + a.w > b.x && a.x < b.x + b.w && a.y + a.h > b.y && a.y < b.y + b.h }
+        function nearInspectable() { return objects.filter(o => o.active && (o.type === 'phish' || o.type === 'safe') && Math.abs((o.x + o.w / 2) - (player.x + player.w / 2)) < 190).sort((a, b) => Math.abs(a.x - player.x) - Math.abs(b.x - player.x))[0] }
+        function inspect() { if (gameState !== 'playing' || modal) return; const near = nearInspectable(); if (!near) { toast('Move closer to a message to inspect it.'); return } inspectTarget = near; near.inspected = true; modal = true; $('inspectTitle').textContent = near.data.title; $('inspectSender').textContent = near.data.sender; $('inspectLink').textContent = near.data.link; $('inspectWarnings').textContent = near.data.warnings; $('clueBox').classList.add('hidden'); $('reportNow').classList.toggle('hidden', inventory.report < 1); $('sourceNow').classList.toggle('hidden', inventory.source < 1); $('inspectPanel').classList.remove('hidden'); beep(760, .08) }
+        function closeInspect() { modal = false; $('inspectPanel').classList.add('hidden'); inspectTarget = null }
+        function resolveMessage(choice) {
+            const o = inspectTarget; if (!o) return; const phishing = o.type === 'phish';
+            if (choice === 'avoid') {
+                if (phishing) { stats.threats++; score += 150; toast('✓ Phishing avoided — good catch!'); beep(930, .13) } else { stats.mistakes++; score = Math.max(0, score - 35); toast('This one was legitimate. Checking was smart, but it did not need blocking.'); beep(270, .12) }
+            } else if (choice === 'continue') {
+                if (phishing) { mistake(o, 'That message was phishing. Check the sender and link next time.'); closeInspect(); return } else { stats.safe++; score += 110; toast('✓ Legitimate message recognized.'); beep(760, .11) }
+            }
+            o.active = false; o.resolved = true; closeInspect(); updateHud();
+        }
+        function inspectFurther() { if (!inspectTarget) return; $('clueBox').classList.remove('hidden'); if (inventory.verify > 0) { inventory.verify--; score += 20; toast('🔎 VERIFY highlighted the important clues.'); updateHud() } else toast('Look at the sender, domain, urgency and what the message asks you to do.'); beep(820, .07) }
+        function useReport() { if (!inspectTarget || inventory.report < 1) return; inventory.report--; if (inspectTarget.type === 'phish') { stats.threats++; score += 180; inspectTarget.active = false; toast('🛡️ Reported and removed the phishing trap.'); beep(1000, .14) } else { stats.mistakes++; score = Math.max(0, score - 40); inspectTarget.active = false; toast('That was a legitimate message — verify before reporting.'); beep(240, .14) } updateHud(); closeInspect() }
+        function useSource() { if (!inspectTarget || inventory.source < 1) return; inventory.source--; $('clueBox').classList.remove('hidden'); $('inspectWarnings').textContent = (inspectTarget.type === 'safe' ? 'Independent verification: the sender confirms this request is genuine. ' : 'Independent verification: the real organization did NOT send this request. ') + inspectTarget.data.warnings; toast('📱 You verified through a separate trusted channel.'); updateHud(); beep(860, .1) }
+        function mistake(o, msg) { if (o) o.active = false; stats.mistakes++; if (inventory.mfa > 0) { inventory.mfa--; toast('🔐 MFA SHIELD blocked the mistake!'); beep(680, .12); updateHud(); return } if (player.invuln > 0) return; hearts--; score = Math.max(0, score - 100); player.invuln = 1.1; phisherMood = 1; toast('⚠ ' + msg); beep(180, .2, 'square'); updateHud(); if (hearts <= 0) { gameState = 'caught'; modal = false; $('inspectPanel').classList.add('hidden'); showScreen('caught') } }
+        function collect(o) { if (!o.active) return; o.active = false; inventory[o.power]++; stats.items++; score += 60; const msg = { verify: '🔎 VERIFY — reveals warning signs during inspection.', report: '🛡️ REPORT — removes one trap from the inspection panel.', mfa: '🔐 MFA SHIELD — automatically blocks one mistake.', source: '📱 CALL THE SOURCE — verifies a request independently.' }[o.power]; toast(msg); beep(1050, .08); updateHud() }
+        function groundAt(x, prevBottom, newBottom) { const base = baseY(); const holes = platforms[0].holes || []; const inHole = holes.some(h => x > h.x && x < h.x + h.w); let best = inHole ? Infinity : base; for (const p of platforms) { if (p.ground) continue; if (x > p.x - 8 && x < p.x + p.w + 8 && prevBottom <= p.y + 8 && newBottom >= p.y) best = Math.min(best, p.y) } return best }
+        function complete() { if (gameState !== 'playing') return; gameState = 'complete'; player.celebrate = 1; const elapsed = (performance.now() - startTime) / 1000; const possible = Math.max(1, stats.totalPhish + stats.totalSafe); const handled = stats.threats + stats.safe; const accuracy = Math.max(0, Math.round(100 * (handled) / (possible + stats.mistakes * .55))); $('bar').style.width = '100%'; $('endTitle').textContent = level === LEVELS.length - 1 ? 'YOU ESCAPED!' : 'LEVEL COMPLETE'; $('stats').innerHTML = `<div class="statline"><b>⭐ Security Score</b><span>${accuracy}%</span></div><div class="statline"><b>🔎 Threats Detected</b><span>${stats.threats}/${stats.totalPhish}</span></div><div class="statline"><b>✓ Safe Messages</b><span>${stats.safe}/${stats.totalSafe}</span></div><div class="statline"><b>🧰 Security Items</b><span>${stats.items}</span></div><div class="statline"><b>🛡️ Mistakes</b><span>${stats.mistakes}</span></div><div class="statline"><b>⏱️ Time</b><span>${formatTime(elapsed)}</span></div>` + (level === LEVELS.length - 1 ? '<h3>Think before you click.</h3>' : ''); $('next').textContent = level === LEVELS.length - 1 ? '🏠 MAIN MENU' : 'NEXT LEVEL'; beep(1100, .25); setTimeout(() => showScreen('end'), 350) }
+        function formatTime(s) { return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}` }
+        function update(dt) {
+            if (gameState !== 'playing' || modal) return; player.invuln = Math.max(0, player.invuln - dt); const accel = 1900, max = 300, friction = Math.pow(.001, dt);
+            if (inputRight()) { player.vx = Math.min(max, player.vx + accel * dt); player.face = 1 } else if (inputLeft()) { player.vx = Math.max(-max, player.vx - accel * dt); player.face = -1 } else player.vx *= friction;
+            const prevBottom = player.y + player.h; player.vy += 1550 * dt; player.x += player.vx * dt; player.x = Math.max(25, Math.min(LEVELS[level].length - 70, player.x)); player.y += player.vy * dt; const newBottom = player.y + player.h; const footX = player.x + player.w * .5; const gy = groundAt(footX, prevBottom, newBottom); player.onGround = false; if (player.vy >= 0 && gy < Infinity && prevBottom <= gy + 10 && newBottom >= gy) { player.y = gy - player.h; player.vy = 0; player.onGround = true }
+            if (player.y > H + 160) { mistake(null, 'You fell off the data path.'); player.x = Math.max(100, player.x - 220); player.y = baseY() - player.h; player.vy = 0 }
+            player.anim += dt * (Math.abs(player.vx) * .045 + 2); camX += (Math.max(0, Math.min(LEVELS[level].length - W, player.x - W * .34)) - camX) * Math.min(1, dt * 7);
+            for (const o of objects) { if (!o.active) continue; if (o.type === 'power' && rectHit(player, o)) collect(o); else if (o.type === 'safezone' && rectHit(player, o)) { complete(); return } else if (o.type === 'phish' && rectHit(player, o)) { mistake(o, 'You ran into a suspicious request without checking it.') } else if (o.type === 'safe' && !o.passed && player.x > o.x + o.w + 35) { o.passed = true; o.active = false; stats.safe++; score += 75; toast('✓ You safely ignored a normal message.'); updateHud() } }
+            const near = nearInspectable(); $('prompt').classList.toggle('hidden', !near); if (Math.abs(player.vx) > 30 && player.onGround && Math.random() < dt * 9) particles.push({ x: player.x, y: player.y + player.h, vx: -player.face * (20 + Math.random() * 35), vy: -15 - Math.random() * 25, life: .45 }); particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt }); particles = particles.filter(p => p.life > 0); if (phisherMood > 0) phisherMood = Math.max(0, phisherMood - dt); updateHud()
+        }
+        function roundedRect(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r) }
+        function bg() { const t = LEVELS[level].theme; let g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, t === 'lair' ? '#241d55' : '#58cfff'); g.addColorStop(.62, t === 'forest' ? '#a5e6cf' : t === 'lab' ? '#d9f3ff' : '#c8efff'); g.addColorStop(.63, t === 'highway' ? '#4a3d93' : '#6655c7'); g.addColorStop(1, '#29235e'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = .22; for (let i = 0; i < 9; i++) { let x = ((i * 300 - camX * .18) % (W + 360)) - 80; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, 115 + (i % 3) * 55, 34, 0, 7); ctx.arc(x + 40, 120 + (i % 3) * 55, 46, 0, 7); ctx.arc(x + 85, 125 + (i % 3) * 55, 30, 0, 7); ctx.fill() } ctx.globalAlpha = 1; if (t === 'city') drawCity(); else if (t === 'forest') drawForest(); else if (t === 'lab') drawLab(); else if (t === 'highway') drawHighway(); else drawLair() }
+        function drawCity() { for (let i = 0; i < 16; i++) { let x = ((i * 240 - camX * .28) % (W + 350)) - 100, h = 100 + (i % 5) * 55; ctx.fillStyle = i % 2 ? '#6d82c9' : '#526bb4'; ctx.fillRect(x, H * .74 - h, 170, h); ctx.fillStyle = '#55d8ff'; for (let y = H * .74 - h + 18; y < H * .74 - 12; y += 28)for (let q = 15; q < 150; q += 35)ctx.fillRect(x + q, y, 14, 12) } }
+        function drawForest() { for (let i = 0; i < 19; i++) { let x = ((i * 180 - camX * .22) % (W + 240)) - 80; ctx.fillStyle = '#397d78'; ctx.fillRect(x, H * .74 - 130, 28, 130); ctx.fillStyle = '#59a987'; ctx.beginPath(); ctx.arc(x + 15, H * .74 - 155, 65, 0, 7); ctx.fill(); ctx.fillStyle = '#dff8ff'; ctx.globalAlpha = .7; ctx.fillRect(x + 45, H * .74 - 135, 70, 30); ctx.globalAlpha = 1 } }
+        function drawLab() { for (let i = 0; i < 10; i++) { let x = ((i * 310 - camX * .25) % (W + 420)) - 100; ctx.fillStyle = '#8aa9c9'; ctx.fillRect(x, H * .74 - 230, 220, 230); ctx.fillStyle = '#55d8ff'; ctx.fillRect(x + 25, H * .74 - 190, 170, 80); ctx.fillStyle = '#7757e8'; ctx.fillRect(x + 50, H * .74 - 170, 120, 35) } }
+        function drawHighway() { ctx.fillStyle = '#2f3c72'; ctx.fillRect(0, H * .74, W, H * .26); for (let i = -1; i < 12; i++) { let x = ((i * 190 - camX * .75) % (W + 190)); ctx.fillStyle = '#fff'; ctx.fillRect(x, H * .86, 90, 8) } for (let i = 0; i < 7; i++) { let x = ((i * 330 - camX * .45) % (W + 350)); ctx.fillStyle = '#55d8ff55'; ctx.fillRect(x, H * .74 - 150, 9, 150) } }
+        function drawLair() { for (let i = 0; i < 11; i++) { let x = ((i * 290 - camX * .3) % (W + 370)) - 100; ctx.fillStyle = '#352e68'; ctx.fillRect(x, H * .74 - 210, 230, 210); ctx.strokeStyle = '#55d8ff'; ctx.lineWidth = 3; ctx.strokeRect(x + 25, H * .74 - 180, 180, 90); ctx.fillStyle = '#ff625d55'; ctx.fillRect(x + 55, H * .74 - 160, 120, 50) } }
+        function drawWorld() {
+            for (const p of platforms) { let x = p.x - camX; if (x + p.w < 0 || x > W) continue; if (p.ground) { ctx.fillStyle = '#dff8ff'; ctx.fillRect(x, p.y, p.w, p.h); ctx.fillStyle = '#55d8ff'; ctx.fillRect(x, p.y, p.w, 6); for (const h of p.holes || []) { ctx.fillStyle = '#29235e'; ctx.fillRect(h.x - camX, p.y - 2, h.w, p.h + 5) } } else { ctx.shadowBlur = 14; ctx.shadowColor = '#55d8ff66'; ctx.fillStyle = '#edfaff'; roundedRect(x, p.y, p.w, p.h, 8); ctx.fill(); ctx.shadowBlur = 0; ctx.fillStyle = '#55d8ff'; ctx.fillRect(x, p.y, p.w, 4) } }
+            for (const o of objects) {
+                if (!o.active) continue; let x = o.x - camX; if (x < -300 || x > W + 300) continue; if (o.type === 'power') { const bob = Math.sin(performance.now() / 300 + o.x) * 6; ctx.shadowBlur = 18; ctx.shadowColor = '#fff'; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x + 22, o.y + 22 + bob, 22, 0, 7); ctx.fill(); ctx.shadowBlur = 0; ctx.font = '23px sans-serif'; ctx.fillText(o.power === 'verify' ? '🔎' : o.power === 'report' ? '🛡️' : o.power === 'mfa' ? '🔐' : '📱', x + 9, o.y + 31 + bob); continue } if (o.type === 'safezone') { ctx.shadowBlur = 32; ctx.shadowColor = '#55d8ff'; let gg = ctx.createLinearGradient(x, o.y, x + o.w, o.y); gg.addColorStop(0, '#fff'); gg.addColorStop(1, '#c9f8ff'); ctx.fillStyle = gg; roundedRect(x, o.y, o.w, o.h, 22); ctx.fill(); ctx.shadowBlur = 0; ctx.fillStyle = '#173a79'; ctx.font = '900 20px system-ui'; ctx.fillText('CYBER SAFE ZONE', x + 25, o.y + 58); ctx.font = '30px sans-serif'; ctx.fillText('🛡️', x + 99, o.y + 98); continue }
+                ctx.fillStyle = '#f9fbff'; ctx.strokeStyle = o.inspected ? '#ffd66b' : '#7695c8'; ctx.lineWidth = 3; roundedRect(x, o.y, o.w, o.h, 14); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#173a79'; ctx.font = '900 13px system-ui'; ctx.fillText('✉ MESSAGE', x + 12, o.y + 20); ctx.font = '12px system-ui'; ctx.fillText(o.data.title.slice(0, 23), x + 12, o.y + 40)
+            }
+        }
+        function drawPlayer() {
+            const sx = player.x - camX, py = player.y, bob = player.onGround ? Math.sin(player.anim) * 1.6 : 0, run = Math.sin(player.anim * 1.7), jump = !player.onGround; ctx.save(); ctx.translate(sx + player.w / 2, py + bob); ctx.scale(player.face, 1); if (player.invuln > 0 && Math.floor(player.invuln * 12) % 2 === 0) ctx.globalAlpha = .35;
+            // backpack
+            ctx.fillStyle = '#7757e8'; roundedRect(-18, 22, 12, 25, 5); ctx.fill();
+            // legs articulated
+            ctx.strokeStyle = '#173a79'; ctx.lineCap = 'round'; ctx.lineWidth = 7; const legA = jump ? -5 : run * 9, legB = jump ? 8 : -run * 9; ctx.beginPath(); ctx.moveTo(-6, 43); ctx.lineTo(-8 + legA, 57); ctx.lineTo(-5 + legA, 63); ctx.moveTo(6, 43); ctx.lineTo(8 + legB, 57); ctx.lineTo(5 + legB, 63); ctx.stroke();
+            // torso hoodie/jacket
+            let tg = ctx.createLinearGradient(0, 18, 0, 48); tg.addColorStop(0, '#2f7df6'); tg.addColorStop(1, '#5b57df'); ctx.fillStyle = tg; roundedRect(-14, 18, 28, 30, 8); ctx.fill();
+            // arms
+            ctx.strokeStyle = '#f3bd8d'; ctx.lineWidth = 6; const arm = jump ? -6 : -run * 8; ctx.beginPath(); ctx.moveTo(-11, 24); ctx.lineTo(-18 + arm, 37); ctx.moveTo(11, 24); ctx.lineTo(18 - arm, 37); ctx.stroke();
+            // neck/head
+            ctx.fillStyle = '#e8a978'; ctx.fillRect(-4, 13, 8, 8); ctx.fillStyle = '#f3bd8d'; ctx.beginPath(); ctx.arc(0, 5, 14, 0, 7); ctx.fill();
+            // hair
+            ctx.fillStyle = '#172449'; ctx.beginPath(); ctx.arc(0, 1, 14, Math.PI, Math.PI * 2); ctx.lineTo(12, 2); ctx.lineTo(7, -7); ctx.lineTo(1, -10); ctx.lineTo(-7, -7); ctx.closePath(); ctx.fill();
+            // eye/nose detail
+            ctx.fillStyle = '#172449'; ctx.beginPath(); ctx.arc(6, 5, 1.7, 0, 7); ctx.fill(); ctx.strokeStyle = '#b87855'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(10, 8); ctx.lineTo(12, 9); ctx.stroke();
+            // shoe
+            ctx.strokeStyle = '#55d8ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-8 + legA, 62); ctx.lineTo(-1 + legA, 62); ctx.moveTo(8 + legB, 62); ctx.lineTo(15 + legB, 62); ctx.stroke();
+            ctx.restore()
+        }
+        function drawPhisher() {
+            const dist = player.x, screenX = Math.max(35, player.x - camX - 260 - Math.sin(performance.now() / 700) * 14), fy = baseY() - 100; ctx.save(); ctx.globalAlpha = .9; ctx.translate(screenX, fy); const sway = Math.sin(performance.now() / 240) * 2; ctx.translate(0, sway); ctx.fillStyle = '#171b40'; roundedRect(-23, 24, 46, 57, 12); ctx.fill(); ctx.fillStyle = '#2b285c'; roundedRect(-31, 33, 15, 38, 7); ctx.fill(); // bait backpack
+            ctx.fillStyle = '#20244f'; ctx.beginPath(); ctx.moveTo(-27, 11); ctx.quadraticCurveTo(0, -22, 27, 11); ctx.lineTo(19, 32); ctx.lineTo(-19, 32); ctx.closePath(); ctx.fill(); // hood
+            ctx.fillStyle = '#0d1331'; roundedRect(-17, 1, 34, 25, 8); ctx.fill(); ctx.fillStyle = phisherMood > 0 ? '#ff625d' : '#55d8ff'; ctx.shadowBlur = 12; ctx.shadowColor = ctx.fillStyle; ctx.fillRect(-9, 10, 18, 4); ctx.shadowBlur = 0; // mask display
+            ctx.strokeStyle = '#55d8ff'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-14, 80); ctx.lineTo(-17 + Math.sin(player.anim) * 5, 93); ctx.moveTo(14, 80); ctx.lineTo(17 - Math.sin(player.anim) * 5, 93); ctx.stroke(); ctx.fillStyle = '#ffd66b'; ctx.font = '18px sans-serif'; ctx.fillText('✉', -37, 54); ctx.restore()
+        }
+        function draw() { bg(); drawWorld(); drawPhisher(); drawPlayer(); for (const p of particles) { ctx.globalAlpha = Math.max(0, p.life / .45); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p.x - camX, p.y, 3, 0, 7); ctx.fill(); ctx.globalAlpha = 1 } }
+        function loop(t) { if (gameState === 'menu') return; const dt = Math.min(.033, Math.max(.001, (t - last) / 1000)); last = t; update(dt); draw(); if (gameState === 'playing' || gameState === 'complete' || gameState === 'caught') requestAnimationFrame(loop) }
+        addEventListener('keydown', e => { keys[e.key] = true; if (['ArrowLeft', 'ArrowRight', ' ', 'Space'].includes(e.key)) e.preventDefault(); if ((e.key === ' ' || e.code === 'Space') && !e.repeat) jump(); if ((e.key === 'e' || e.key === 'E') && !e.repeat) inspect(); if ((e.key === 'p' || e.key === 'P') && !e.repeat) togglePause(); if (e.key === 'Escape' && modal) closeInspect() }); addEventListener('keyup', e => keys[e.key] = false);
+        function bindHold(id, key) { const b = $(id); const down = e => { e.preventDefault(); keys[key] = true }; const up = e => { e.preventDefault(); keys[key] = false }; b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up) } bindHold('leftBtn', 'ArrowLeft'); bindHold('rightBtn', 'ArrowRight'); $('jumpBtn').onclick = jump; $('inspectBtn').onclick = inspect;
+        function togglePause() { if (gameState === 'paused') { gameState = 'playing'; showScreen(null); last = performance.now(); return } if (gameState !== 'playing' || modal) return; gameState = 'paused'; showScreen('pause') } $('pauseBtn').onclick = togglePause; $('resume').onclick = togglePause;
+        $('restartPause').onclick = () => { showScreen(null); resetLevel(); gameState = 'playing'; last = performance.now() }; $('menuPause').onclick = showMenu; $('play').onclick = startGame; $('how').onclick = () => showScreen('howPanel'); $('backHow').onclick = () => showScreen('start'); $('settings').onclick = () => showScreen('settingsPanel'); $('backSettings').onclick = () => showScreen('start'); $('toggleSound').onclick = () => { muted = !muted; $('soundState').textContent = muted ? 'OFF' : 'ON'; $('mute').textContent = muted ? '🔇' : '🔊' }; $('mute').onclick = () => $('toggleSound').click();
+        $('avoid').onclick = () => resolveMessage('avoid'); $('continueMsg').onclick = () => resolveMessage('continue'); $('further').onclick = inspectFurther; $('reportNow').onclick = useReport; $('sourceNow').onclick = useSource;
+        $('retry').onclick = () => { showScreen(null); resetLevel(); gameState = 'playing'; last = performance.now() }; $('next').onclick = () => { if (level === LEVELS.length - 1) { showMenu(); return } level++; showScreen(null); resetLevel(); gameState = 'playing'; last = performance.now() }; $('homeEnd').onclick = showMenu; $('tryAgain').onclick = () => { showScreen(null); resetLevel(); gameState = 'playing'; last = performance.now() }; $('homeCaught').onclick = showMenu;
+    </script>
+</body>
+
+</html>
